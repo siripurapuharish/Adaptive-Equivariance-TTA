@@ -42,7 +42,7 @@ class RandomCrop(object):
 
         # If size matches, return the image and labels
         if w == tw and h == th:
-            return (image, (*label_list))
+            return (image, *label_list)
             # return (image, label, *args)
 
         # Crop image and output
@@ -70,9 +70,9 @@ class RandomScale(object):
         if ratio == 1:
             return image, label
         elif ratio < 1:
-            interpolation = Image.ANTIALIAS
+            interpolation = getattr(getattr(Image, 'Resampling', Image), 'BILINEAR', Image.BILINEAR)
         else:
-            interpolation = Image.CUBIC
+            interpolation = getattr(getattr(Image, 'Resampling', Image), 'BICUBIC', Image.BICUBIC)
         return image.resize((tw, th), interpolation), \
                label.resize((tw, th), Image.NEAREST)
 
@@ -143,7 +143,7 @@ class Normalize(object):
         # if label is None:
         #     return image,
         # else:
-        return image, (*labels) # Returning a tuple (normalised_image, label1, label2, label3....)
+        return (image, *labels) # Returning a tuple (normalised_image, label1, label2, label3....)
 
 
 def pad_reflection(image, top, bottom, left, right):
@@ -276,9 +276,9 @@ class ToTensor(object):
                 if l.mode == 'I':
                     label_list[i] = torch.FloatTensor(np.array(l, dtype=np.float32))
                 else:
-                    label_list[i] = torch.LongTensor(np.array(l, dtype=np.int))
+                    label_list[i] = torch.LongTensor(np.array(l, dtype=int))
 
-            return img, (*label_list)
+            return (img, *label_list)
 
 
 class Compose(object):

@@ -254,14 +254,28 @@ def run_test(dataset, model, model_path, step_size, step_num, select_class, trai
     attack_type='vanilla', attack_norm='l_inf', transform_delta=True, addnoise=True, num_view=7,
     reverse_step_size=255, reverse_step_num=50, reverse_time_mutiply=1.5, adapt_lambda=1, BPDA=False):
     config_file_path = "config/{}_{}_config.json".format(model, dataset)
+    if not os.path.exists(config_file_path):
+        config_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), config_file_path)
 
     with open(config_file_path) as config_file:
         config = json.load(config_file)
 
+        repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         import socket
         if 'cv' in socket.gethostname():
             data_dir = '/proj/vondrick/mcz/MTLR/cityscape/cityscape_dataset_subsampled' # TODO:
             backup_output_dir = '/local/vondrick/mcz/backup'
+        else:
+            default_data_dir = os.path.join(repo_root, "cityscapes_dataset_subsampled")
+            if os.path.exists(default_data_dir):
+                data_dir = default_data_dir
+            elif os.path.exists("cityscapes_dataset_subsampled"):
+                data_dir = os.path.abspath("cityscapes_dataset_subsampled")
+            elif os.path.exists("../cityscapes_dataset_subsampled"):
+                data_dir = os.path.abspath("../cityscapes_dataset_subsampled")
+            else:
+                data_dir = default_data_dir
+            backup_output_dir = os.path.join(repo_root, "experiments")
 
 
         list_dir = config['list-dir']
@@ -395,8 +409,10 @@ if __name__ == '__main__':
 
 
 
-    cityscape_adv_pretrained_model_path = "advtrain_drn_d_22_cityscapes.pth.tar"
-    cityscape_adv_pretrained_model_path = "/proj/vondrick/mcz/2022Spring/EquiRob/train/city_adv_eps4_200e_s2_n3/last_200.pth.tar"
+    repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    cityscape_adv_pretrained_model_path = os.path.join(repo_root, "checkpoints", "advtrain_drn_d_22_cityscapes.pth.tar")
+    if not os.path.exists(cityscape_adv_pretrained_model_path):
+        cityscape_adv_pretrained_model_path = "checkpoints/advtrain_drn_d_22_cityscapes.pth.tar"
     ## adv, if not use BPDA, then set BPDA = False
     # set batch size =8 when you have 88GB GPU memory avaiable (8 * 2080Ti)
     run_test(dataset='cityscape', model='drn_d_22', model_path=cityscape_adv_pretrained_model_path,
@@ -468,7 +484,9 @@ if __name__ == '__main__':
 
 
     # # # also reproduce 32.9 mIoU
-    cityscape_vanilla_pretrained_model_path = "clean_drn_d_22_cityscapes.pth.tar"
+    cityscape_vanilla_pretrained_model_path = os.path.join(repo_root, "checkpoints", "clean_drn_d_22_cityscapes.pth")
+    if not os.path.exists(cityscape_vanilla_pretrained_model_path):
+        cityscape_vanilla_pretrained_model_path = "checkpoints/clean_drn_d_22_cityscapes.pth"
     run_test(dataset='cityscape', model='drn_d_22', model_path=cityscape_vanilla_pretrained_model_path,
              step_size=1, step_num=50, select_class=False, train_category=[], adv_test=False, test_batch_size=8, args=args, attack_type='equi',
              attack_norm='l_inf', addnoise=True, num_view=7, reverse_step_size=255, reverse_step_num=20, reverse_time_mutiply=1.5)
