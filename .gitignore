@@ -1,0 +1,26 @@
+
+# Large datasets
+cityscapes_dataset/
+cityscapes_dataset_subsampled/
+
+# Model checkpoints
+checkpoints/
+*.pth
+*.pth.tar
+*.pt
+
+# Python generated files
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Experiment outputs and logs
+experiments/
+*.log
+
+# IDE and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
