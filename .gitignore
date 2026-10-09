@@ -19,6 +19,10 @@ venv/
 experiments/
 *.log
 
+# Secrets and environment variables
+.env
+*.env
+
 # IDE and OS files
 .vscode/
 .idea/
