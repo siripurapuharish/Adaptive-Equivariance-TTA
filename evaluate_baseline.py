@@ -150,15 +150,62 @@ def align_output(out: torch.Tensor, target_h: int = 340, target_w: int = 680, mo
         raise ValueError(f"Unsupported alignment mode '{mode}'. Choose 'bilinear' or 'slice'.")
 
 
-def load_model(checkpoint_path: str, device: torch.device) -> torch.nn.Module:
-    """Instantiate DRNSeg and strictly load pretrained clean weights."""
+def load_model(checkpoint_path: str, device: torch.device) -> Tuple[torch.nn.Module, Dict]:
+    """
+    Instantiate DRNSeg and strictly load pretrained weights.
+    Supports both direct state_dict (.pth) and training checkpoints (.pth.tar with 'module.' prefixes).
+    Returns (model, metadata_dict).
+    """
     model = DRNSeg("drn_d_22", classes=19, pretrained=False)
-    state_dict = torch.load(checkpoint_path, map_location="cpu")
-    if "state_dict" in state_dict:
-        state_dict = state_dict["state_dict"]
-    model.load_state_dict(state_dict, strict=True)
+    raw = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
+
+    metadata = {
+        "checkpoint_path": checkpoint_path,
+        "checkpoint_filename": os.path.basename(checkpoint_path),
+        "epoch": None,
+        "arch": "drn_d_22",
+        "best_prec1": None,
+        "has_module_prefix": False,
+        "missing_keys": [],
+        "unexpected_keys": [],
+    }
+
+    if isinstance(raw, dict) and "state_dict" in raw:
+        state_dict = raw["state_dict"]
+        metadata["epoch"] = raw.get("epoch")
+        metadata["arch"] = raw.get("arch", "drn_d_22")
+        bp1 = raw.get("best_prec1")
+        metadata["best_prec1"] = float(bp1) if bp1 is not None else None
+    elif isinstance(raw, dict):
+        state_dict = raw
+    else:
+        raise ValueError(f"Unexpected checkpoint format in {checkpoint_path}: {type(raw)}")
+
+    # Clean keys if prefixed by module. (e.g. from torch.nn.DataParallel)
+    clean_state_dict = {}
+    has_module_prefix = False
+    for k, v in state_dict.items():
+        if k.startswith("module."):
+            clean_state_dict[k[7:]] = v
+            has_module_prefix = True
+        else:
+            clean_state_dict[k] = v
+    metadata["has_module_prefix"] = has_module_prefix
+
+    # Load strictly using PyTorch's native load_state_dict
+    load_result = model.load_state_dict(clean_state_dict, strict=True)
+    metadata["missing_keys"] = list(load_result.missing_keys)
+    metadata["unexpected_keys"] = list(load_result.unexpected_keys)
+
     model.to(device).eval()
-    return model
+
+    print(f"[Model Load] Checkpoint: {os.path.basename(checkpoint_path)}")
+    if metadata.get("epoch") is not None:
+        print(f"             Metadata: epoch={metadata['epoch']}, arch={metadata.get('arch')}, best_prec1={metadata.get('best_prec1')}")
+    print(f"             'module.' prefix removed: {has_module_prefix}")
+    print(f"             Strict load: OK (0 missing, 0 unexpected keys)")
+
+    return model, metadata
 
 
 def run_smoke_test(
@@ -204,8 +251,8 @@ def run_smoke_test(
 
     # 3. Load model
     print(f"Loading checkpoint: {checkpoint_path}...")
-    model = load_model(checkpoint_path, device)
-    print("[OK] Model instantiated and weights loaded strictly.")
+    model, metadata = load_model(checkpoint_path, device)
+    print(f"[OK] Model instantiated and weights loaded strictly (arch: {metadata.get('arch')}).")
 
     # 4. Test sample processing
     test_samples = min(num_samples, len(img_lines))
@@ -297,7 +344,7 @@ def run_repeatability_check(
     with open(labels_txt, "r") as f:
         lbl_lines = [line.strip() for line in f if line.strip()][:num_samples]
 
-    model = load_model(checkpoint_path, device)
+    model, metadata = load_model(checkpoint_path, device)
 
     def evaluate_pass():
         hist = np.zeros((19, 19), dtype=np.int64)
@@ -336,6 +383,7 @@ def evaluate_full_dataset(
     data_dir: str,
     checkpoint_path: str,
     output_dir: str,
+    output_prefix: str = None,
     alignment: str = "bilinear",
     batch_size: int = 4,
     device: torch.device = torch.device("cuda"),
@@ -347,8 +395,24 @@ def evaluate_full_dataset(
       - Calculates mIoU, per-class IoU, pixel accuracy
       - Saves results to JSON, formatted summary text, and visualizations
     """
+    # Determine experiment branding and prefix
+    if output_prefix is not None:
+        effective_prefix = output_prefix
+    else:
+        ckpt_name = os.path.basename(checkpoint_path).lower()
+        effective_prefix = "baseline_advtrain_drn_d_22" if "adv" in ckpt_name else "baseline_drn_d_22"
+
+    is_adv = "adv" in effective_prefix.lower() or "adv" in os.path.basename(checkpoint_path).lower()
+    exp_title = (
+        "Adversarially Trained DRN-D-22 Clean-Image Baseline Evaluation"
+        if is_adv else
+        "Vanilla DRN-D-22 Baseline Evaluation"
+    )
+    paper_reported_miou = 53.23 if is_adv else 58.29
+    paper_table_ref = "ICML 2023 Table 1" if is_adv else "ICML 2023 Table 2"
+
     print("\n" + "=" * 70)
-    print(f"STARTING FULL BASELINE EVALUATION (500 SAMPLES, Alignment: '{alignment}')")
+    print(f"STARTING {exp_title.upper()} (500 SAMPLES, Alignment: '{alignment}')")
     print("=" * 70)
 
     os.makedirs(output_dir, exist_ok=True)
@@ -373,7 +437,7 @@ def evaluate_full_dataset(
 
     # 2. Load model
     print(f"Loading checkpoint: {checkpoint_path}...")
-    model = load_model(checkpoint_path, device)
+    model, metadata = load_model(checkpoint_path, device)
 
     # 3. Inference loop
     hist = np.zeros((19, 19), dtype=np.int64)
@@ -443,12 +507,13 @@ def evaluate_full_dataset(
                 break
             sample_pred = preds[saved_vis_count - b_start]
             base_name = os.path.splitext(os.path.basename(img_name))[0]
+            vis_tag = f"{effective_prefix}_{alignment}" if effective_prefix != "baseline_drn_d_22" else alignment
 
             pred_color = colorize_segmentation(sample_pred)
-            pred_color.save(os.path.join(vis_dir, f"{base_name}_{alignment}_pred.png"))
+            pred_color.save(os.path.join(vis_dir, f"{base_name}_{vis_tag}_pred.png"))
 
             panel = create_comparison_panel(pil_img, gt_arr, sample_pred, base_name)
-            panel.save(os.path.join(vis_dir, f"{base_name}_{alignment}_comparison.png"))
+            panel.save(os.path.join(vis_dir, f"{base_name}_{vis_tag}_comparison.png"))
             saved_vis_count += 1
 
         if (b_idx + 1) % 25 == 0 or (b_idx + 1) == num_batches:
@@ -472,22 +537,32 @@ def evaluate_full_dataset(
         per_class_results[name] = round(float(ious[idx]), 2)
 
     results = {
-        "experiment": "Vanilla DRN-D-22 Baseline Evaluation",
+        "experiment": exp_title,
         "dataset": "Cityscapes Subsampled (val)",
         "num_samples": total_images,
         "input_resolution": "680x340",
         "checkpoint": os.path.basename(checkpoint_path),
+        "checkpoint_path": checkpoint_path,
+        "checkpoint_metadata": {
+            "epoch": metadata.get("epoch"),
+            "arch": metadata.get("arch"),
+            "best_prec1": metadata.get("best_prec1"),
+            "has_module_prefix": metadata.get("has_module_prefix"),
+            "strict_load": True,
+            "missing_keys_count": len(metadata.get("missing_keys", [])),
+            "unexpected_keys_count": len(metadata.get("unexpected_keys", []))
+        },
         "alignment_method": alignment,
         "alignment_rationale": (
             "Bilinear interpolation from (344, 680) -> (340, 680) matches the official reference protocol "
             "defined in fyu/drn/segment.py:66 and Equi4Rob/learning/utils_learn.py:66 (resize_4d_tensor). "
-            "It faithfully reproduces Table 2 of the ICML 2023 paper (58.24% observed vs 58.29% reported)."
+            f"Reference paper reported {paper_reported_miou}% on Cityscapes ({paper_table_ref})."
             if alignment == "bilinear" else
             "Bottom-slice truncation (:340, :680) discards the 4 extra bottom padding rows."
         ),
-        "paper_reported_miou_percent": 58.29,
+        "paper_reported_miou_percent": paper_reported_miou,
         "observed_miou_percent": round(mean_iou, 2),
-        "absolute_difference_from_paper": round(abs(mean_iou - 58.29), 2),
+        "absolute_difference_from_paper": round(abs(mean_iou - paper_reported_miou), 2),
         "pixel_accuracy_percent": round(pixel_acc, 2),
         "total_runtime_seconds": round(total_time, 2),
         "latency_ms_per_image": round(avg_latency, 2),
@@ -497,52 +572,60 @@ def evaluate_full_dataset(
     }
 
     # 4. Save results JSON
-    json_path = os.path.join(output_dir, f"baseline_drn_d_22_{alignment}_metrics.json")
-    with open(json_path, "w") as f:
+    aligned_json_path = os.path.join(output_dir, f"{effective_prefix}_{alignment}_metrics.json")
+    with open(aligned_json_path, "w") as f:
         json.dump(results, f, indent=2)
-    print(f"\n[Saved] Metrics JSON: {json_path}")
 
-    # Primary results JSON (default to current run)
-    primary_json = os.path.join(output_dir, "baseline_drn_d_22_metrics.json")
-    with open(primary_json, "w") as f:
+    primary_json_path = os.path.join(output_dir, f"{effective_prefix}_metrics.json")
+    with open(primary_json_path, "w") as f:
         json.dump(results, f, indent=2)
+    print(f"\n[Saved] Metrics JSON: {primary_json_path}")
 
     # 5. Save human-readable summary text
-    summary_path = os.path.join(output_dir, f"baseline_drn_d_22_{alignment}_summary.txt")
-    with open(summary_path, "w") as f:
-        f.write("=" * 65 + "\n")
-        f.write("    VANILLA DRN-D-22 BASELINE EVALUATION SUMMARY\n")
-        f.write("=" * 65 + "\n")
-        f.write(f"Dataset:              Cityscapes Subsampled (Validation Split)\n")
-        f.write(f"Checkpoint:           {checkpoint_path}\n")
-        f.write(f"Evaluation Samples:   {total_images} images\n")
-        f.write(f"Input Resolution:     680 x 340\n")
-        f.write(f"Preprocessing:        Downsampled to 680x340, official trainId mapping (0-18)\n")
-        f.write(f"Ignore Label:         255 (masked out during metric computation)\n")
-        f.write(f"Alignment Method:     {alignment.upper()} (official protocol, fyu/drn and Equi4Rob/learning/utils_learn.py:66)\n")
-        f.write(f"Device:               {results['device']}\n")
-        f.write(f"Total Runtime:        {total_time:.2f} s ({avg_latency:.1f} ms/sample, {fps:.1f} FPS)\n")
-        f.write("-" * 65 + "\n")
-        f.write(f"Observed Global mIoU: {mean_iou:.2f}%\n")
-        f.write(f"Paper Reported mIoU:  58.29% (ICML 2023 Table 2)\n")
-        f.write(f"Difference:           {mean_iou - 58.29:+.2f}%\n")
-        f.write(f"Pixel Accuracy:       {pixel_acc:.2f}%\n")
-        f.write("-" * 65 + "\n")
-        f.write("PER-CLASS IoU (%):\n")
-        for idx, (name, val) in enumerate(per_class_results.items()):
-            f.write(f"  {idx:2d}. {name:<16s}: {val:6.2f}%\n")
-        f.write("=" * 65 + "\n")
-    print(f"[Saved] Summary report: {summary_path}")
+    aligned_summary_path = os.path.join(output_dir, f"{effective_prefix}_{alignment}_summary.txt")
+    summary_lines = [
+        "=" * 65,
+        f"    {exp_title.upper()} SUMMARY",
+        "=" * 65,
+        f"Dataset:              Cityscapes Subsampled (Validation Split)",
+        f"Checkpoint:           {checkpoint_path}",
+    ]
+    if metadata.get("epoch") is not None:
+        summary_lines.append(f"Checkpoint Metadata:  epoch={metadata['epoch']}, arch={metadata.get('arch')}, best_prec1={metadata.get('best_prec1')}")
+    summary_lines.extend([
+        f"Evaluation Samples:   {total_images} images",
+        f"Input Resolution:     680 x 340",
+        f"Preprocessing:        Downsampled to 680x340, official trainId mapping (0-18)",
+        f"Ignore Label:         255 (masked out during metric computation)",
+        f"Alignment Method:     {alignment.upper()} (official protocol, fyu/drn and Equi4Rob/learning/utils_learn.py:66)",
+        f"Strict Load:          Verified 0 missing, 0 unexpected keys (module. stripped: {metadata.get('has_module_prefix')})",
+        f"Device:               {results['device']}",
+        f"Total Runtime:        {total_time:.2f} s ({avg_latency:.1f} ms/sample, {fps:.1f} FPS)",
+        "-" * 65,
+        f"Observed Global mIoU: {mean_iou:.2f}%",
+        f"Paper Reported mIoU:  {paper_reported_miou:.2f}% ({paper_table_ref})",
+        f"Difference:           {mean_iou - paper_reported_miou:+.2f}%",
+        f"Pixel Accuracy:       {pixel_acc:.2f}%",
+        "-" * 65,
+        "PER-CLASS IoU (%):"
+    ])
+    for idx, (name, val) in enumerate(per_class_results.items()):
+        summary_lines.append(f"  {idx:2d}. {name:<16s}: {val:6.2f}%")
+    summary_lines.append("=" * 65)
+    summary_text = "\n".join(summary_lines) + "\n"
 
-    primary_summary = os.path.join(output_dir, "baseline_drn_d_22_summary.txt")
-    with open(primary_summary, "w") as f:
-        with open(summary_path, "r") as sf:
-            f.write(sf.read())
+    with open(aligned_summary_path, "w") as f:
+        f.write(summary_text)
+
+    primary_summary_path = os.path.join(output_dir, f"{effective_prefix}_summary.txt")
+    with open(primary_summary_path, "w") as f:
+        f.write(summary_text)
+    print(f"[Saved] Summary report: {primary_summary_path}")
 
     print(f"[Saved] Visualizations: {vis_dir} ({saved_vis_count} sample comparisons saved)")
 
     print("\n" + "=" * 65)
-    print(f"FINAL RESULT: Global mIoU = {mean_iou:.2f}% (Paper: 58.29%) | Pixel Acc = {pixel_acc:.2f}%")
+    print(f"FINAL RESULT: Global mIoU = {mean_iou:.2f}% (Paper: {paper_reported_miou:.2f}%) | Pixel Acc = {pixel_acc:.2f}%")
     print("=" * 65)
 
     return results
@@ -553,9 +636,11 @@ def main():
     parser.add_argument("--data-dir", type=str, default="cityscapes_dataset_subsampled",
                         help="Path to preprocessed subsampled Cityscapes dataset.")
     parser.add_argument("--checkpoint", type=str, default="checkpoints/clean_drn_d_22_cityscapes.pth",
-                        help="Path to clean DRN-D-22 checkpoint.")
+                        help="Path to DRN-D-22 checkpoint (clean or adversarially trained).")
     parser.add_argument("--output-dir", type=str, default="results",
                         help="Directory to save evaluation results and visualizations.")
+    parser.add_argument("--output-prefix", type=str, default=None,
+                        help="Prefix for output result files. Defaults to 'baseline_advtrain_drn_d_22' if checkpoint is adversarial, else 'baseline_drn_d_22'.")
     parser.add_argument("--alignment", type=str, default="bilinear", choices=["bilinear", "slice"],
                         help="Output-to-label alignment method: 'bilinear' (official protocol) or 'slice'.")
     parser.add_argument("--batch-size", type=int, default=4,
@@ -609,6 +694,7 @@ def main():
             data_dir=args.data_dir,
             checkpoint_path=args.checkpoint,
             output_dir=args.output_dir,
+            output_prefix=args.output_prefix,
             alignment=args.alignment,
             batch_size=args.batch_size,
             device=device,

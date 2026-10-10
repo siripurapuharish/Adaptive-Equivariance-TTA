@@ -1,0 +1,51 @@
+=================================================================
+    DIAGNOSTIC EXPERIMENT: ADVTRAIN DRN-D-22 AT 680x336
+    [DIAGNOSTIC REFERENCE ONLY - NOT OFFICIAL RESULT]
+=================================================================
+Status:               Diagnostic Experiment (Reference Only)
+Dataset:              Cityscapes Subsampled (Validation Split, cropped to 680x336)
+Checkpoint:           checkpoints/advtrain_drn_d_22_cityscapes.pth.tar
+Checkpoint Metadata:  epoch=200, arch=drn_d_22, best_prec1=33.91
+Evaluation Samples:   500 images
+Input Resolution:     680 x 336
+Ignore Label:         255 (masked out during metric computation)
+Alignment Method:     NATIVE STRIDE ALIGNED (336 / 8 = 42 exact integer)
+Device:               NVIDIA RTX 2000 Ada Generation
+-----------------------------------------------------------------
+Observed mIoU:        52.01%
+Paper Reported mIoU:  53.23% (ICML 2023 Table 1)
+Difference:           -1.22%
+Pixel Accuracy:       90.45%
+-----------------------------------------------------------------
+PER-CLASS IoU (%):
+   0. road            :  95.34%
+   1. sidewalk        :  65.31%
+   2. building        :  82.51%
+   3. wall            :  25.15%
+   4. fence           :  23.02%
+   5. pole            :  30.18%
+   6. traffic light   :  28.50%
+   7. traffic sign    :  43.40%
+   8. vegetation      :  82.25%
+   9. terrain         :  42.58%
+  10. sky             :  89.63%
+  11. person          :  54.81%
+  12. rider           :  27.84%
+  13. car             :  86.47%
+  14. truck           :  38.17%
+  15. bus             :  60.79%
+  16. train           :  47.52%
+  17. motorcycle      :  18.16%
+  18. bicycle         :  46.50%
+-----------------------------------------------------------------
+DIAGNOSTIC RATIONALE & CONTEXT:
+  - Source Evidence: In columbia/MTRobust/data_resize_cityscape.py:53,
+    the author code performs `im.crop((0, 0, 680, 336))`.
+    In Equi4Rob/learning/houdini_attack.py:30, tensor shape is commented as [16, 336, 680].
+  - Technical Consequence: At height 336, the 8x downsampling and upsampling
+    strides match exactly (336 / 8 = 42), yielding natural output shape (336, 680)
+    with zero padding or interpolation discrepancy.
+  - Distinction: This run is preserved strictly as diagnostic evidence.
+    The official baseline remains 51.34% at 680x340 bilinear alignment until
+    the paper's full training/evaluation pipeline is conclusively replicated.
+=================================================================

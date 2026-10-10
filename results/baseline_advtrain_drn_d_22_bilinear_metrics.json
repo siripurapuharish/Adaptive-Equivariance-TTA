@@ -1,0 +1,61 @@
+{
+  "experiment": "Adversarially Trained DRN-D-22 Clean-Image Baseline Evaluation",
+  "dataset": "Cityscapes Subsampled (val)",
+  "num_samples": 500,
+  "input_resolution": "680x340",
+  "checkpoint": "advtrain_drn_d_22_cityscapes.pth.tar",
+  "checkpoint_path": "checkpoints/advtrain_drn_d_22_cityscapes.pth.tar",
+  "checkpoint_metadata": {
+    "epoch": 200,
+    "arch": "drn_d_22",
+    "best_prec1": 33.91,
+    "has_module_prefix": true,
+    "strict_load": true,
+    "missing_keys_count": 0,
+    "unexpected_keys_count": 0
+  },
+  "alignment_method": "bilinear",
+  "alignment_rationale": "Bilinear interpolation from (344, 680) -> (340, 680) matches the official reference protocol defined in fyu/drn/segment.py:66 and Equi4Rob/learning/utils_learn.py:66 (resize_4d_tensor). Reference paper reported 53.23% on Cityscapes (ICML 2023 Table 1).",
+  "paper_reported_miou_percent": 53.23,
+  "observed_miou_percent": 51.34,
+  "absolute_difference_from_paper": 1.89,
+  "pixel_accuracy_percent": 90.1,
+  "total_runtime_seconds": 14.85,
+  "latency_ms_per_image": 29.71,
+  "throughput_fps": 33.66,
+  "per_class_iou_percent": {
+    "road": 94.72,
+    "sidewalk": 61.96,
+    "building": 82.52,
+    "wall": 24.53,
+    "fence": 22.72,
+    "pole": 29.85,
+    "traffic light": 28.25,
+    "traffic sign": 43.17,
+    "vegetation": 82.1,
+    "terrain": 40.48,
+    "sky": 89.45,
+    "person": 54.49,
+    "rider": 27.77,
+    "car": 84.81,
+    "truck": 37.85,
+    "bus": 60.27,
+    "train": 47.53,
+    "motorcycle": 17.68,
+    "bicycle": 45.4
+  },
+  "discrepancy_analysis": {
+    "paper_reported_miou_percent": 53.23,
+    "observed_miou_percent": 51.34,
+    "absolute_difference": 1.89,
+    "diagnostic_findings": {
+      "checkpoint_sha256_verified": "3e1dd739c44dfecbff40b18105c57ced0788297e8a9d4b89da598cf897f323e4",
+      "author_stride_crop_reference": "columbia/MTRobust/data_resize_cityscape.py:53 crops to 680x336 matching 8x DRN stride",
+      "diagnostic_crop336_miou_percent": 52.01,
+      "diagnostic_slice_miou_percent": 51.97,
+      "official_bilinear_miou_percent": 51.34
+    },
+    "note": "Resampling differences and stride-padding sensitivity are plausible contributing factors for part of the gap, but are not conclusively proven to account for the entire 1.89-point difference. 51.34% remains the established official 680x340 bilinear result."
+  },
+  "device": "NVIDIA RTX 2000 Ada Generation"
+}
