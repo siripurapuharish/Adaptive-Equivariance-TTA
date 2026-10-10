@@ -1,0 +1,64 @@
+================================================================================
+ADVERSARIALLY TRAINED DRN-D-22 PGD ATTACK BASELINE (NO DEFENSE)
+================================================================================
+
+Checkpoint:                checkpoints/advtrain_drn_d_22_cityscapes.pth.tar
+Checkpoint Filename:       advtrain_drn_d_22_cityscapes.pth.tar
+Dataset:                   Cityscapes Validation Set (Subsampled)
+Samples Evaluated:         500
+Input Resolution:          340 x 680
+Raw Output Shape:          19 x 344 x 680
+Alignment Method:          Differentiable Bilinear Interpolation (344 -> 340)
+
+ATTACK CONFIGURATION:
+  Attack Mode:             Untargeted L-infinity PGD (Vanilla, No Defense)
+  Perturbation Budget:     L_inf eps = 0.015686 (4.0/255)
+  Step Size:               alpha = 0.003922 (1.0/255)
+  Iterations:              T = 50 steps
+  Random Initialization:   Uniform in [-eps, +eps]
+  Image Space Bounds:      [0.0, 1.0] (clamped at every step)
+  Loss Function:           nn.NLLLoss(ignore_index=255) on aligned LogSoftmax
+  Random Seed:             42
+
+PERFORMANCE SUMMARY:
+  Adversarial mIoU:        25.25%
+  Adversarial Pixel Acc:   71.85%
+  Average NLL Loss:        1.0943
+  Clean-Image Baseline:    51.34% mIoU (measured previously on 680x340 bilinear)
+  Absolute Degradation:    26.09 percentage points
+
+PAPER BENCHMARK COMPARISON:
+  Paper Table 1 Reference: 26.61% mIoU (ICML 2023, Mao et al.)
+  Our Measured Result:     25.25% mIoU
+  Discrepancy:             -1.36 percentage points
+
+PER-CLASS IoU BREAKDOWN (19 Classes):
+--------------------------------------------------
+Class ID  Class Name          IoU (%)   
+--------------------------------------------------
+0         road                78.98%
+1         sidewalk            22.03%
+2         building            57.56%
+3         wall                0.54%
+4         fence               2.01%
+5         pole                18.52%
+6         traffic light       12.81%
+7         traffic sign        19.80%
+8         vegetation          54.73%
+9         terrain             4.97%
+10        sky                 80.20%
+11        person              26.36%
+12        rider               8.42%
+13        car                 59.44%
+14        truck               4.05%
+15        bus                 8.53%
+16        train               1.16%
+17        motorcycle          0.63%
+18        bicycle             19.00%
+--------------------------------------------------
+
+RUNTIME & SYSTEM METRICS:
+  Total Wall Time:         1102.82 seconds (18.38 minutes)
+  Throughput:              0.45 FPS
+  Batch Latency:           8.7472 s/batch (Batch size = 4)
+  Device:                  NVIDIA RTX 2000 Ada Generation
