@@ -17,6 +17,8 @@ venv/
 
 # Experiment outputs and logs
 experiments/
+results/visualizations/
+results/*.png
 *.log
 
 # Secrets and environment variables
