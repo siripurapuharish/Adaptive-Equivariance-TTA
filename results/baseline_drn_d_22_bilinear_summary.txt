@@ -1,0 +1,39 @@
+=================================================================
+    VANILLA DRN-D-22 BASELINE EVALUATION SUMMARY
+=================================================================
+Dataset:              Cityscapes Subsampled (Validation Split)
+Checkpoint:           checkpoints/clean_drn_d_22_cityscapes.pth
+Evaluation Samples:   500 images
+Input Resolution:     680 x 340
+Preprocessing:        Downsampled to 680x340, official trainId mapping (0-18)
+Ignore Label:         255 (masked out during metric computation)
+Alignment Method:     BILINEAR (official protocol, fyu/drn and Equi4Rob/learning/utils_learn.py:66)
+Device:               NVIDIA RTX 2000 Ada Generation
+Total Runtime:        14.27 s (28.5 ms/sample, 35.0 FPS)
+-----------------------------------------------------------------
+Observed Global mIoU: 58.24%
+Paper Reported mIoU:  58.29% (ICML 2023 Table 2)
+Difference:           -0.05%
+Pixel Accuracy:       91.57%
+-----------------------------------------------------------------
+PER-CLASS IoU (%):
+   0. road            :  94.64%
+   1. sidewalk        :  64.10%
+   2. building        :  86.05%
+   3. wall            :  45.32%
+   4. fence           :  40.57%
+   5. pole            :  37.90%
+   6. traffic light   :  36.05%
+   7. traffic sign    :  50.13%
+   8. vegetation      :  86.05%
+   9. terrain         :  47.14%
+  10. sky             :  89.32%
+  11. person          :  59.31%
+  12. rider           :  37.45%
+  13. car             :  85.50%
+  14. truck           :  54.37%
+  15. bus             :  61.44%
+  16. train           :  42.87%
+  17. motorcycle      :  33.82%
+  18. bicycle         :  54.43%
+=================================================================
