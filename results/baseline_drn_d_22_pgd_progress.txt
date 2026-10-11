@@ -1,0 +1,6 @@
+Task Live Progress (baseline_drn_d_22_pgd):
+  Batch:             125/125 | Samples: 500/500 (100.0%)
+  Running mIoU:      1.29%
+  Pixel Acc:         15.52%
+  Batch Latency:     6.61s
+  Elapsed:           13.9 min | ETA: 0.0 min

@@ -167,6 +167,8 @@ def load_model(checkpoint_path: str, device: torch.device) -> Tuple[torch.nn.Mod
     metadata["missing_keys"] = list(load_result.missing_keys)
     metadata["unexpected_keys"] = list(load_result.unexpected_keys)
 
+    for p in model.parameters():
+        p.requires_grad = False
     model.to(device).eval()
 
     print(f"[Model Load] Checkpoint: {os.path.basename(checkpoint_path)}")
@@ -554,16 +556,25 @@ def evaluate_full_dataset(
                 panel.save(panel_path)
                 saved_vis_count += 1
 
-        if (b_idx + 1) % 10 == 0 or (b_idx + 1) == num_batches:
-            processed = b_end
-            elapsed = time.time() - start_time
-            running_miou = np.nanmean(per_class_iu(hist)) * 100
-            running_acc = 100.0 * total_correct / total_valid_pixels
-            print(f"  Batch [{b_idx+1}/{num_batches}] "
-                  f"Samples: {processed}/{total_images} ({100.0*processed/total_images:.1f}%) | "
-                  f"Elapsed: {elapsed:.1f}s | "
-                  f"Running mIoU: {running_miou:.2f}% | "
-                  f"Pixel Acc: {running_acc:.2f}%")
+        processed = b_end
+        elapsed = time.time() - start_time
+        running_miou = np.nanmean(per_class_iu(hist)) * 100
+        running_acc = 100.0 * total_correct / total_valid_pixels
+        rem_batches = num_batches - (b_idx + 1)
+        eta_sec = rem_batches * np.mean(batch_latencies)
+
+        print(f"[{b_idx+1:3d}/{num_batches:3d}] Samples: {processed:3d}/{total_images} ({100.0*processed/total_images:5.1f}%) | "
+              f"Running mIoU: {running_miou:5.2f}% | Pixel Acc: {running_acc:5.2f}% | "
+              f"Batch Lat: {batch_latencies[-1]:.2f}s | ETA: {eta_sec/60:4.1f}m")
+
+        progress_path = os.path.join(output_dir, f"{output_prefix}_progress.txt")
+        with open(progress_path, "w") as pf:
+            pf.write(f"Task Live Progress ({output_prefix}):\n")
+            pf.write(f"  Batch:             {b_idx+1}/{num_batches} | Samples: {processed}/{total_images} ({(processed/total_images)*100:.1f}%)\n")
+            pf.write(f"  Running mIoU:      {running_miou:.2f}%\n")
+            pf.write(f"  Pixel Acc:         {running_acc:.2f}%\n")
+            pf.write(f"  Batch Latency:     {batch_latencies[-1]:.2f}s\n")
+            pf.write(f"  Elapsed:           {elapsed/60:.1f} min | ETA: {eta_sec/60:.1f} min\n")
 
     total_time = time.time() - start_time
     mean_batch_lat = np.mean(batch_latencies)
@@ -649,15 +660,21 @@ def evaluate_full_dataset(
         f.write(f"  Loss Function:           nn.NLLLoss(ignore_index=255) on aligned LogSoftmax\n")
         f.write(f"  Random Seed:             {seed}\n\n")
 
+        is_clean_model = "clean" in checkpoint_path.lower()
+        clean_ref = 58.29 if is_clean_model else 51.34
+        paper_ref = 1.31 if is_clean_model else 26.61
+        table_name = "Table 2" if is_clean_model else "Table 1"
+        discrepancy = overall_miou - paper_ref
+
         f.write("PERFORMANCE SUMMARY:\n")
         f.write(f"  Adversarial mIoU:        {overall_miou:.2f}%\n")
         f.write(f"  Adversarial Pixel Acc:   {overall_pixel_acc:.2f}%\n")
         f.write(f"  Average NLL Loss:        {avg_loss:.4f}\n")
-        f.write(f"  Clean-Image Baseline:    51.34% mIoU (measured previously on 680x340 bilinear)\n")
-        f.write(f"  Absolute Degradation:    {51.34 - overall_miou:.2f} percentage points\n\n")
+        f.write(f"  Clean-Image Baseline:    {clean_ref:.2f}% mIoU\n")
+        f.write(f"  Absolute Degradation:    {clean_ref - overall_miou:.2f} percentage points\n\n")
 
         f.write("PAPER BENCHMARK COMPARISON:\n")
-        f.write(f"  Paper Table 1 Reference: 26.61% mIoU (ICML 2023, Mao et al.)\n")
+        f.write(f"  Paper {table_name} Reference: {paper_ref:.2f}% mIoU (ICML 2023, Mao et al.)\n")
         f.write(f"  Our Measured Result:     {overall_miou:.2f}% mIoU\n")
         f.write(f"  Discrepancy:             {discrepancy:+.2f} percentage points\n\n")
 
