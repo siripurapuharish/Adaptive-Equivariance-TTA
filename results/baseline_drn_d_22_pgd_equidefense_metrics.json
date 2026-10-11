@@ -1,0 +1,33 @@
+{
+  "task": "Task 4: Adversarially Trained DRN-D-22 under PGD-50 with Equivariance TTA Defense",
+  "checkpoint": "checkpoints/clean_drn_d_22_cityscapes.pth",
+  "samples_evaluated": 500,
+  "clean_miou": 58.238496114253344,
+  "adversarial_no_defense_miou": 1.320159877579737,
+  "defended_equi_miou": 17.917162331163492,
+  "recovery": 16.597002453583755,
+  "paper_reported_defended_miou": 29.65,
+  "runtime_seconds": 4997.524150848389,
+  "fps": 0.10004954151449555,
+  "per_class_ious": {
+    "road": 76.92,
+    "sidewalk": 13.73,
+    "building": 34.86,
+    "wall": 0.24,
+    "fence": 3.41,
+    "pole": 6.84,
+    "traffic light": 4.22,
+    "traffic sign": 8.68,
+    "vegetation": 44.52,
+    "terrain": 7.77,
+    "sky": 36.73,
+    "person": 29.59,
+    "rider": 1.65,
+    "car": 39.4,
+    "truck": 6.03,
+    "bus": 4.74,
+    "train": 9.91,
+    "motorcycle": 0.11,
+    "bicycle": 11.1
+  }
+}

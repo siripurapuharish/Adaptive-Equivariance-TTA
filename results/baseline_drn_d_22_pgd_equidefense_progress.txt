@@ -1,0 +1,8 @@
+Task 4 Live Progress:
+  Batch:             250/250 | Samples: 500/500 (100.0%)
+  Clean mIoU:        58.24%
+  PGD Attack mIoU:   1.32%
+  Defended mIoU:     17.92%
+  Recovery:          +16.60 percentage points
+  Batch Latency:     19.82s | Speed: 0.10 FPS
+  Elapsed:           83.3 min | ETA: 0.0 min
