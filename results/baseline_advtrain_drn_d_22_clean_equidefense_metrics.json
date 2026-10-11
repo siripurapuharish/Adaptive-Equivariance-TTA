@@ -1,0 +1,32 @@
+{
+  "task": "Task 2: Adversarially Trained DRN-D-22 on Clean Images with Equivariance TTA Defense",
+  "checkpoint": "checkpoints/advtrain_drn_d_22_cityscapes.pth.tar",
+  "samples_evaluated": 500,
+  "clean_vanilla_miou": 51.34057414192204,
+  "clean_equi_defended_miou": 44.063842241103394,
+  "difference": -7.276731900818646,
+  "paper_target_miou": 48.74,
+  "runtime_seconds": 4227.461137294769,
+  "fps": 0.11827429839365934,
+  "per_class_ious": {
+    "road": 85.28,
+    "sidewalk": 47.82,
+    "building": 78.78,
+    "wall": 17.9,
+    "fence": 19.49,
+    "pole": 22.33,
+    "traffic light": 18.5,
+    "traffic sign": 36.68,
+    "vegetation": 74.7,
+    "terrain": 10.1,
+    "sky": 88.55,
+    "person": 51.17,
+    "rider": 22.04,
+    "car": 79.31,
+    "truck": 31.4,
+    "bus": 52.23,
+    "train": 42.42,
+    "motorcycle": 18.94,
+    "bicycle": 39.58
+  }
+}

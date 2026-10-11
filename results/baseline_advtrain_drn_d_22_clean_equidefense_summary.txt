@@ -1,0 +1,37 @@
+===========================================================================
+TASK 2: ADVERSARIALLY TRAINED DRN-D-22 (CLEAN) + EQUIVARIANCE DEFENSE
+===========================================================================
+
+Dataset:                     Cityscapes Validation Subsampled (680x340)
+Checkpoint:                  checkpoints/advtrain_drn_d_22_cityscapes.pth.tar
+Samples Evaluated:           500
+Attack:                      None (Clean Images)
+Defense:                     Equivariance TTA (20 steps, eps_v=10/255, 8 spatial views)
+
+RESULTS SUMMARY:
+  Clean Vanilla mIoU:        51.34% (Paper Table 1: 53.23%)
+  Clean + Equi Defended mIoU:44.06% (Paper Table 1: 48.74%)
+  Trade-off Difference:      -7.28 percentage points
+
+PER-CLASS DEFENDED IoU (%):
+   0. road              : 85.28%
+   1. sidewalk          : 47.82%
+   2. building          : 78.78%
+   3. wall              : 17.90%
+   4. fence             : 19.49%
+   5. pole              : 22.33%
+   6. traffic light     : 18.50%
+   7. traffic sign      : 36.68%
+   8. vegetation        : 74.70%
+   9. terrain           : 10.10%
+  10. sky               : 88.55%
+  11. person            : 51.17%
+  12. rider             : 22.04%
+  13. car               : 79.31%
+  14. truck             : 31.40%
+  15. bus               : 52.23%
+  16. train             : 42.42%
+  17. motorcycle        : 18.94%
+  18. bicycle           : 39.58%
+
+Total Wall Time:             4227.46 s (70.46 min)

@@ -1,0 +1,7 @@
+Task 2 Live Progress:
+  Batch:             250/250 | Samples: 500/500 (100.0%)
+  Clean (No Def):    51.34%
+  Clean + Equi Def:  44.06%
+  Trade-off Diff:    -7.28 percentage points
+  Batch Latency:     16.88s | Speed: 0.12 FPS
+  Elapsed:           70.5 min | ETA: 0.0 min
