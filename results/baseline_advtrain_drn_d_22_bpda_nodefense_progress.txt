@@ -1,0 +1,7 @@
+Task 5 Live Progress (baseline_advtrain_drn_d_22_bpda_nodefense):
+  Batch:             125/125 | Samples: 500/500 (100.0%)
+  Clean mIoU:        51.34%
+  BPDA-NoDef mIoU:   25.25%
+  Degradation:       26.09 percentage points
+  Batch Latency:     6.30s | Speed: 0.63 FPS
+  Elapsed:           13.2 min | ETA: 0.0 min

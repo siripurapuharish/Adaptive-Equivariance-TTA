@@ -1,0 +1,32 @@
+{
+  "task": "Task 5: Adversarially Trained DRN-D-22 under BPDA Attack (No Defense)",
+  "checkpoint": "checkpoints/advtrain_drn_d_22_cityscapes.pth.tar",
+  "samples_evaluated": 500,
+  "clean_miou": 51.34201920518845,
+  "bpda_nodefense_miou": 25.254748193609895,
+  "paper_target_miou": 26.61,
+  "discrepancy": -1.355251806390104,
+  "runtime_seconds": 789.6418888568878,
+  "fps": 0.6331984245716965,
+  "per_class_ious": {
+    "road": 79.01,
+    "sidewalk": 21.98,
+    "building": 57.59,
+    "wall": 0.57,
+    "fence": 2.0,
+    "pole": 18.5,
+    "traffic light": 12.83,
+    "traffic sign": 19.77,
+    "vegetation": 54.71,
+    "terrain": 4.94,
+    "sky": 80.2,
+    "person": 26.49,
+    "rider": 8.49,
+    "car": 59.36,
+    "truck": 4.08,
+    "bus": 8.37,
+    "train": 1.18,
+    "motorcycle": 0.67,
+    "bicycle": 19.1
+  }
+}
