@@ -1,0 +1,38 @@
+===========================================================================
+TASK 4: ADVERSARIALLY TRAINED DRN-D-22 + PGD-50 + EQUIVARIANCE DEFENSE
+===========================================================================
+
+Dataset:                   Cityscapes Validation Subsampled (680x340)
+Checkpoint:                checkpoints/advtrain_drn_d_22_cityscapes.pth.tar
+Samples Evaluated:         500
+Attack:                    PGD-50 (L_inf eps=4/255, step=1/255, 50 steps)
+Defense:                   Equivariance TTA (20 steps, eps_v=2.5*eps, 8 spatial views)
+
+RESULTS SUMMARY:
+  Clean mIoU:              51.34%
+  Adversarial (No Defense):25.26% (Paper Table 1: 26.61%)
+  Equivariance Defended:   28.48% (Paper Table 1: 29.65%)
+  Robustness Recovery:     +3.21 percentage points
+
+PER-CLASS DEFENDED IoU (%):
+   0. road              : 71.84%
+   1. sidewalk          : 25.79%
+   2. building          : 64.12%
+   3. wall              : 5.74%
+   4. fence             : 4.68%
+   5. pole              : 16.74%
+   6. traffic light     : 11.16%
+   7. traffic sign      : 21.94%
+   8. vegetation        : 59.31%
+   9. terrain           : 3.69%
+  10. sky               : 82.52%
+  11. person            : 35.55%
+  12. rider             : 10.26%
+  13. car               : 62.77%
+  14. truck             : 10.55%
+  15. bus               : 14.66%
+  16. train             : 11.04%
+  17. motorcycle        : 4.46%
+  18. bicycle           : 24.19%
+
+Total Wall Time:           4938.29 s (82.30 min)
