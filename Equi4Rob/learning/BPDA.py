@@ -86,7 +86,8 @@ def BPDA(x, y, net_list, Loss, epsilon, steps, step_size, innormalize, norm = "l
         # if depth:
         #     cost = Loss(torch.mean(h_adv[0], dim=1), y)
         # else:
-        cost = Loss(h_adv[0], y) 
+        aligned_h = F.interpolate(h_adv[0], size=(y.size(1), y.size(2)), mode='bilinear', align_corners=False) if h_adv[0].shape[-2:] != y.shape[-2:] else h_adv[0]
+        cost = Loss(aligned_h, y) 
         net.zero_grad()
         cost.backward()
 
