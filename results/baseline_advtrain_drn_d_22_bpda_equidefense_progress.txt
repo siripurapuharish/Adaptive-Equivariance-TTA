@@ -1,0 +1,8 @@
+Task 6 Live Progress:
+  Batch:             250/250 | Samples: 500/500 (100.0%)
+  Clean mIoU:        51.34%
+  BPDA (No Defense): 36.42%
+  BPDA + Equi Def:   22.55%
+  Recovery:          -13.87 percentage points
+  Batch Latency:     182.86s | Speed: 0.01 FPS
+  Elapsed:           779.7 min | ETA: 0.0 min

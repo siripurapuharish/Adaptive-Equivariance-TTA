@@ -1,0 +1,38 @@
+===========================================================================
+TASK 6: ADVERSARIALLY TRAINED DRN-D-22 + BPDA + EQUIVARIANCE DEFENSE
+===========================================================================
+
+Dataset:                     Cityscapes Validation Subsampled (680x340)
+Checkpoint:                  checkpoints/advtrain_drn_d_22_cityscapes.pth.tar
+Samples Evaluated:           500
+Attack:                      BPDA (10 steps, eps=4/255, step=1/255, L_inf)
+Defense:                     Equivariance TTA (20 steps, eps_v=2.5*eps, 8 spatial views)
+
+RESULTS SUMMARY:
+  Clean mIoU:                51.34%
+  BPDA Attack (No Defense):  36.42% (Paper Table 1: 26.61%)
+  BPDA + Equi Defended:      22.55% (Paper Table 1: 29.83%)
+  Defense Recovery:          -13.87 percentage points
+
+PER-CLASS DEFENDED IoU (%):
+   0. road              : 33.32%
+   1. sidewalk          : 16.58%
+   2. building          : 56.87%
+   3. wall              : 1.88%
+   4. fence             : 3.61%
+   5. pole              : 13.91%
+   6. traffic light     : 7.83%
+   7. traffic sign      : 17.38%
+   8. vegetation        : 51.43%
+   9. terrain           : 0.99%
+  10. sky               : 81.67%
+  11. person            : 33.41%
+  12. rider             : 5.69%
+  13. car               : 56.41%
+  14. truck             : 6.27%
+  15. bus               : 13.78%
+  16. train             : 4.90%
+  17. motorcycle        : 3.14%
+  18. bicycle           : 19.46%
+
+Total Wall Time:             46781.37 s (779.69 min)

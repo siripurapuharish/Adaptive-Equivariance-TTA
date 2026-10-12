@@ -1,0 +1,33 @@
+{
+  "task": "Task 6: Adversarially Trained DRN-D-22 under BPDA with Equivariance TTA Defense",
+  "checkpoint": "checkpoints/advtrain_drn_d_22_cityscapes.pth.tar",
+  "samples_evaluated": 500,
+  "clean_miou": 51.34057414192204,
+  "bpda_no_defense_miou": 36.42488952383659,
+  "bpda_equi_defended_miou": 22.554141172307887,
+  "recovery": -13.870748351528704,
+  "paper_reported_defended_miou": 29.83,
+  "runtime_seconds": 46781.37454366684,
+  "fps": 0.010688014297940054,
+  "per_class_ious": {
+    "road": 33.32,
+    "sidewalk": 16.58,
+    "building": 56.87,
+    "wall": 1.88,
+    "fence": 3.61,
+    "pole": 13.91,
+    "traffic light": 7.83,
+    "traffic sign": 17.38,
+    "vegetation": 51.43,
+    "terrain": 0.99,
+    "sky": 81.67,
+    "person": 33.41,
+    "rider": 5.69,
+    "car": 56.41,
+    "truck": 6.27,
+    "bus": 13.78,
+    "train": 4.9,
+    "motorcycle": 3.14,
+    "bicycle": 19.46
+  }
+}
