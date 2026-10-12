@@ -1,0 +1,38 @@
+===========================================================================
+TASK 10: CLEAN PRETRAINED DRN-D-22 + PGD-50 + EQUIVARIANCE DEFENSE
+===========================================================================
+
+Dataset:                   Cityscapes Validation Subsampled (680x340)
+Checkpoint:                checkpoints/clean_drn_d_22_cityscapes.pth
+Samples Evaluated:         50
+Attack:                    PGD-50 (L_inf eps=4/255, step=1/255, 50 steps)
+Defense:                   Equivariance TTA (20 steps, eps_v=6.0/255, 7 views)
+
+RESULTS SUMMARY:
+  Clean mIoU:              54.33% (Paper Target: 58.29%)
+  Adversarial (No Defense):1.05% (Paper Target: 1.31%)
+  Equivariance Defended:   31.07% (Paper Target: 30.76%)
+  Robustness Recovery:     +30.02 percentage points
+
+PER-CLASS DEFENDED IoU (%):
+   0. road              : 88.07%
+   1. sidewalk          : 24.93%
+   2. building          : 51.97%
+   3. wall              : 0.28%
+   4. fence             : 8.46%
+   5. pole              : 19.29%
+   6. traffic light     : 15.26%
+   7. traffic sign      : 34.71%
+   8. vegetation        : 61.96%
+   9. terrain           : 19.98%
+  10. sky               : 44.92%
+  11. person            : 35.40%
+  12. rider             : 17.92%
+  13. car               : 60.37%
+  14. truck             : 41.86%
+  15. bus               : 7.03%
+  16. train             : 28.35%
+  17. motorcycle        : 1.69%
+  18. bicycle           : 27.88%
+
+Total Wall Time:           436.31 s (7.27 min)

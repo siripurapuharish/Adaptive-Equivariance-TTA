@@ -1,0 +1,24 @@
+================================================================================================
+        REPRODUCTION BENCHMARK: TASK 8 & TASK 10 COMPLETED & VERIFIED
+================================================================================================
+
+  Status:              COMPLETED (500/500 Cityscapes Validation Images)
+  Target Benchmark:    ICML 2023 Table 2 (Mao et al., "Robust Perception through Equivariance")
+  Corrections Applied: eps_v = 6/255 (1.5*eps) [VERIFIED] | num_views = 7 (spatial only) [VERIFIED]
+
+================================================================================================
+                                FINAL REPRODUCTION SUMMARY
+================================================================================================
+  Task 8: Clean Model + Clean Images + Equivariance Defense
+    - Previous Flawed: 23.20% mIoU
+    - Corrected Ours:  35.66% mIoU
+    - Paper Target:    37.95% mIoU (Delta: -2.29%)
+    - Runtime:         59.44 min (500 samples)
+
+  Task 10: Clean Model + PGD-50 (eps=4/255, 50 steps) + Equivariance Defense
+    - Previous Flawed: 17.92% mIoU
+    - Corrected Ours:  29.38% mIoU
+    - Paper Target:    30.76% mIoU (Delta: -1.38%)
+    - Robustness Gain: +28.06% mIoU over undefended (1.32%)
+    - Runtime:         73.69 min (500 samples)
+================================================================================================

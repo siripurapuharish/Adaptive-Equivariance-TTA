@@ -136,14 +136,15 @@ def evaluate_equi_defense(
     data_dir: str,
     checkpoint_path: str,
     output_dir: str = "results",
-    output_prefix: str = "baseline_advtrain_drn_d_22_pgd_equidefense",
+    output_prefix: str = "baseline_clean_drn_d_22_pgd_equidefense",
     batch_size: int = 2,
     num_samples: int = None,
     epsilon: float = 4.0 / 255.0,
     step_size: float = 1.0 / 255.0,
     attack_steps: int = 50,
     defense_steps: int = 20,
-    reverse_multiply: float = 2.5,
+    reverse_multiply: float = 1.5,
+    num_views: int = 7,
     alignment: str = "bilinear",
     device: torch.device = None,
     seed: int = 42
@@ -154,19 +155,26 @@ def evaluate_equi_defense(
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
 
+    is_clean_model = "clean" in os.path.basename(checkpoint_path).lower()
+    task_id = "TASK 10" if is_clean_model else "TASK 4"
+    task_name = "CLEAN PRETRAINED DRN-D-22 + PGD-50 + EQUIVARIANCE DEFENSE" if is_clean_model else "ADVERSARIALLY TRAINED DRN-D-22 + PGD-50 + EQUIVARIANCE TTA DEFENSE"
+    paper_target = 30.76 if is_clean_model else 29.65
+    paper_adv_target = 1.31 if is_clean_model else 26.61
+    paper_clean_target = 58.29 if is_clean_model else 53.23
+
     print("=" * 75)
-    print(" TASK 4: ADVERSARIALLY TRAINED DRN-D-22 + PGD-50 + EQUIVARIANCE TTA DEFENSE ")
+    print(f" {task_id}: {task_name} ")
     print("=" * 75)
     print(f"Device:             {torch.cuda.get_device_name(0)}")
     print(f"Checkpoint:         {checkpoint_path}")
     print(f"Attack:             Untargeted PGD-50 (eps={epsilon*255:.1f}/255, alpha={step_size*255:.1f}/255)")
-    print(f"Defense:            Equivariance TTA ({defense_steps} steps, eps_v={epsilon*reverse_multiply*255:.1f}/255, 8 views)")
+    print(f"Defense:            Equivariance TTA ({defense_steps} steps, eps_v={epsilon*reverse_multiply*255:.1f}/255, {num_views} views)")
     print(f"Batch Size:         {batch_size}")
     print(f"Output Alignment:   {alignment}")
 
     # Load model
     model, _ = load_model(checkpoint_path, device)
-    net_list = [model] * 9
+    net_list = [model] * num_views
 
     mean = torch.tensor([0.290101, 0.328081, 0.286964]).view(1, 3, 1, 1).to(device)
     std = torch.tensor([0.182954, 0.186566, 0.184475]).view(1, 3, 1, 1).to(device)
@@ -304,7 +312,7 @@ def evaluate_equi_defense(
         os.makedirs(output_dir, exist_ok=True)
         progress_path = os.path.join(output_dir, f"{output_prefix}_progress.txt")
         with open(progress_path, "w") as pf:
-            pf.write(f"Task 4 Live Progress:\n")
+            pf.write(f"{task_id} Live Progress:\n")
             pf.write(f"  Batch:             {b_idx+1}/{num_batches} | Samples: {processed}/{total_samples} ({(processed/total_samples)*100:.1f}%)\n")
             pf.write(f"  Clean mIoU:        {cur_clean_miou:.2f}%\n")
             pf.write(f"  PGD Attack mIoU:   {cur_adv_miou:.2f}%\n")
@@ -318,7 +326,7 @@ def evaluate_equi_defense(
             interim_json = os.path.join(output_dir, f"{output_prefix}_metrics.json")
             with open(interim_json, "w") as f:
                 json.dump({
-                    "task": "Task 4: Adversarially Trained DRN-D-22 under PGD-50 with Equivariance TTA Defense",
+                    "task": f"{task_id}: {task_name}",
                     "checkpoint": checkpoint_path,
                     "samples_evaluated": processed,
                     "total_samples": total_samples,
@@ -326,6 +334,9 @@ def evaluate_equi_defense(
                     "adversarial_no_defense_miou": round(cur_adv_miou, 2),
                     "defended_equi_miou": round(cur_def_miou, 2),
                     "recovery": round(cur_def_miou - cur_adv_miou, 2),
+                    "paper_target_miou": paper_target,
+                    "reverse_multiply": reverse_multiply,
+                    "num_views": num_views,
                     "status": "in_progress" if processed < total_samples else "completed",
                     "elapsed_minutes": round(elapsed / 60, 2)
                 }, f, indent=2)
@@ -342,9 +353,9 @@ def evaluate_equi_defense(
     print("\n" + "=" * 75)
     print(" FINAL EVALUATION RESULTS ")
     print("=" * 75)
-    print(f"Clean Baseline mIoU:         {clean_miou:.2f}% (Paper: 53.23%)")
-    print(f"PGD Attack (No Defense):     {adv_miou:.2f}% (Paper: 26.61%)")
-    print(f"Equivariance Defense (TTA):  {def_miou:.2f}% (Paper: 29.65%)")
+    print(f"Clean Baseline mIoU:         {clean_miou:.2f}% (Paper: {paper_clean_target:.2f}%)")
+    print(f"PGD Attack (No Defense):     {adv_miou:.2f}% (Paper: {paper_adv_target:.2f}%)")
+    print(f"Equivariance Defense (TTA):  {def_miou:.2f}% (Paper: {paper_target:.2f}%)")
     print(f"Defense Recovery:            {def_miou - adv_miou:+.2f} percentage points")
     print(f"Total Runtime:               {total_time:.2f}s ({total_time/60:.2f}m) | Speed: {total_samples/total_time:.2f} FPS")
     print("=" * 75)
@@ -355,14 +366,16 @@ def evaluate_equi_defense(
     json_path = os.path.join(output_dir, f"{output_prefix}_metrics.json")
 
     results_data = {
-        "task": "Task 4: Adversarially Trained DRN-D-22 under PGD-50 with Equivariance TTA Defense",
+        "task": f"{task_id}: {task_name}",
         "checkpoint": checkpoint_path,
         "samples_evaluated": total_samples,
         "clean_miou": clean_miou,
         "adversarial_no_defense_miou": adv_miou,
         "defended_equi_miou": def_miou,
         "recovery": def_miou - adv_miou,
-        "paper_reported_defended_miou": 29.65,
+        "paper_reported_defended_miou": paper_target,
+        "reverse_multiply": reverse_multiply,
+        "num_views": num_views,
         "runtime_seconds": total_time,
         "fps": total_samples / total_time,
         "per_class_ious": {CITYSCAPES_CLASSES[i]: round(float(def_ious[i]), 2) for i in range(19)}
@@ -372,17 +385,17 @@ def evaluate_equi_defense(
 
     with open(summary_path, "w") as f:
         f.write("=" * 75 + "\n")
-        f.write("TASK 4: ADVERSARIALLY TRAINED DRN-D-22 + PGD-50 + EQUIVARIANCE DEFENSE\n")
+        f.write(f"{task_id}: {task_name}\n")
         f.write("=" * 75 + "\n\n")
         f.write(f"Dataset:                   Cityscapes Validation Subsampled (680x340)\n")
         f.write(f"Checkpoint:                {checkpoint_path}\n")
         f.write(f"Samples Evaluated:         {total_samples}\n")
         f.write(f"Attack:                    PGD-50 (L_inf eps=4/255, step=1/255, 50 steps)\n")
-        f.write(f"Defense:                   Equivariance TTA (20 steps, eps_v=2.5*eps, 8 spatial views)\n\n")
+        f.write(f"Defense:                   Equivariance TTA ({defense_steps} steps, eps_v={epsilon*reverse_multiply*255:.1f}/255, {num_views} views)\n\n")
         f.write("RESULTS SUMMARY:\n")
-        f.write(f"  Clean mIoU:              {clean_miou:.2f}%\n")
-        f.write(f"  Adversarial (No Defense):{adv_miou:.2f}% (Paper Table 1: 26.61%)\n")
-        f.write(f"  Equivariance Defended:   {def_miou:.2f}% (Paper Table 1: 29.65%)\n")
+        f.write(f"  Clean mIoU:              {clean_miou:.2f}% (Paper Target: {paper_clean_target:.2f}%)\n")
+        f.write(f"  Adversarial (No Defense):{adv_miou:.2f}% (Paper Target: {paper_adv_target:.2f}%)\n")
+        f.write(f"  Equivariance Defended:   {def_miou:.2f}% (Paper Target: {paper_target:.2f}%)\n")
         f.write(f"  Robustness Recovery:     {def_miou - adv_miou:+.2f} percentage points\n\n")
         f.write("PER-CLASS DEFENDED IoU (%):\n")
         for i, c in enumerate(CITYSCAPES_CLASSES):
@@ -395,13 +408,17 @@ def evaluate_equi_defense(
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Evaluate Task 4: Equivariance Defense under PGD-50")
+    parser = argparse.ArgumentParser(description="Evaluate Equivariance Defense under PGD-50")
     parser.add_argument("--data-dir", type=str, default="cityscapes_dataset_subsampled")
-    parser.add_argument("--checkpoint", type=str, default="checkpoints/advtrain_drn_d_22_cityscapes.pth.tar")
+    parser.add_argument("--checkpoint", type=str, default="checkpoints/clean_drn_d_22_cityscapes.pth")
     parser.add_argument("--output-dir", type=str, default="results")
-    parser.add_argument("--output-prefix", type=str, default="baseline_advtrain_drn_d_22_pgd_equidefense")
+    parser.add_argument("--output-prefix", type=str, default="baseline_clean_drn_d_22_pgd_equidefense")
     parser.add_argument("--batch-size", type=int, default=2)
     parser.add_argument("--num-samples", type=int, default=None)
+    parser.add_argument("--reverse-multiply", type=float, default=1.5, help="Defense perturbation bound multiplier eps_v = reverse_multiply * eps (default: 1.5 for Table 2)")
+    parser.add_argument("--num-views", type=int, default=7, help="Number of views for equivariance defense (default: 7 for Table 2)")
+    parser.add_argument("--defense-steps", type=int, default=20, help="Number of defense steps (default: 20)")
+    parser.add_argument("--attack-steps", type=int, default=50, help="Number of PGD attack steps (default: 50)")
     parser.add_argument("--smoke-test", action="store_true")
     args = parser.parse_args()
 
@@ -415,5 +432,9 @@ if __name__ == "__main__":
         output_prefix=args.output_prefix,
         batch_size=args.batch_size,
         num_samples=num_samples,
+        reverse_multiply=args.reverse_multiply,
+        num_views=args.num_views,
+        attack_steps=args.attack_steps,
+        defense_steps=args.defense_steps,
         device=device
     )

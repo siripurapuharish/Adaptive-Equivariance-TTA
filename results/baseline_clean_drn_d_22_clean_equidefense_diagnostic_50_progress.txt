@@ -1,0 +1,7 @@
+TASK 8 Live Progress:
+  Batch:             25/25 | Samples: 50/50 (100.0%)
+  Clean (No Def):    54.33%
+  Clean + Equi Def:  36.39%
+  Trade-off Diff:    -17.94 percentage points
+  Batch Latency:     14.34s | Speed: 0.14 FPS
+  Elapsed:           6.0 min | ETA: 0.0 min

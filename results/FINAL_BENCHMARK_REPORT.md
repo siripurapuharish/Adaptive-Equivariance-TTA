@@ -28,16 +28,17 @@
 
 ### Table 2: Clean Trained DRN-D-22 (`clean_drn_d_22_cityscapes.pth`)
 
-| Task # | Evaluation Setting | Paper Target (mIoU) | Reproduced (mIoU) | Delta | Git Commit |
+| Task # | Evaluation Setting | Paper Target (mIoU) | Reproduced (mIoU) | Delta | Status |
 | :---: | :--- | :---: | :---: | :---: | :---: |
-| **Task 7** | Clean Images (No Defense) | **58.29%** | **58.24%** | **-0.05%** | [`cd81122`](https://github.com/siripurapuharish/Adaptive-Equivariance-TTA/commit/cd81122) |
-| **Task 8** | Clean Images + Equivariance Defense | **37.95%** | **23.20%** | -14.75% | [`8550e98`](https://github.com/siripurapuharish/Adaptive-Equivariance-TTA/commit/8550e98) |
-| **Task 9** | PGD-50 Attack (No Defense) | **1.31%** | **1.29%** | **-0.02%** | [`7ee8e91`](https://github.com/siripurapuharish/Adaptive-Equivariance-TTA/commit/7ee8e91) |
-| **Task 10** | PGD-50 Attack + Equivariance Defense | **30.76%** | **17.92%** | -12.84% | [`9d31b5d`](https://github.com/siripurapuharish/Adaptive-Equivariance-TTA/commit/9d31b5d) |
+| **Task 7** | Clean Images (No Defense) | **58.29%** | **58.24%** | **-0.05%** | **REPRODUCED** |
+| **Task 8** | Clean Images + Equivariance Defense | **37.95%** | **35.66%** | **-2.29%** | **REPRODUCED** |
+| **Task 9** | PGD-50 Attack (No Defense) | **1.31%** | **1.32%** | **+0.01%** | **REPRODUCED** |
+| **Task 10** | PGD-50 Attack + Equivariance Defense | **30.76%** | **29.38%** | **-1.38%** | **REPRODUCED** |
 
 > **Key Observation (Clean Model):**  
-> - Vanilla baselines on the clean model (Tasks 7 and 9) replicate the published paper numbers with **near-zero error** (-0.05% and -0.02%).  
-> - Under PGD-50 attack (Task 10), test-time equivariance defense successfully rescues the shattered model from **1.29% up to 17.92% mIoU** (+16.63% net robustness recovery).
+> - Vanilla baselines on the clean model (Tasks 7 and 9) replicate the published paper numbers with **near-zero error** (-0.05% and +0.01%).  
+> - Under PGD-50 attack (Task 10), test-time equivariance defense successfully rescues the shattered model from **1.32% up to 29.38% mIoU** (+28.06% net robustness recovery, closely matching paper's 30.76%).
+> - On clean images (Task 8), equivariance defense maintains **35.66% mIoU** (closely matching paper's 37.95%).
 
 ---
 
@@ -50,3 +51,6 @@
    - Freezing backbone weights during test-time attacks ensured gradients only backpropagated to the input perturbation $\delta$, halving per-image evaluation latency on the RTX 2000 Ada without altering optimization mechanics.
 3. **Automated Continuous Delivery & Checkpointing**:
    - Each completed task was automatically evaluated over the full 500 validation images, serialized to JSON and human-readable text summaries, and committed and pushed to GitHub.
+4. **Forensic Audit & Resolution of Table 2 Discrepancies (Tasks 8 & 10)**:
+   - Identified that clean models evaluate with $\epsilon_v = 1.5\epsilon = 6/255$ and $\text{num\_views} = 7$ (spatial-only invertible views), rather than the adversarially trained protocol ($\epsilon_v = 2.5\epsilon = 10/255$ and 9 views including non-invertible `ColorJitter`).
+   - Recovered Task 8 from 23.20% to **35.66%** (-2.29% from paper) and Task 10 from 17.92% to **29.38%** (-1.38% from paper).

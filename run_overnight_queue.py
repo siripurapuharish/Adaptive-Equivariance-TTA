@@ -83,6 +83,8 @@ def main():
                 sys.executable, "evaluate_clean_equi_defense.py",
                 "--checkpoint", "checkpoints/clean_drn_d_22_cityscapes.pth",
                 "--output-prefix", "baseline_drn_d_22_clean_equidefense",
+                "--epsilon-defense", str(6.0 / 255.0),
+                "--num-views", "7",
                 "--batch-size", "2"
             ],
             "prefix": "baseline_drn_d_22_clean_equidefense",
@@ -96,6 +98,8 @@ def main():
                 sys.executable, "evaluate_equi_defense.py",
                 "--checkpoint", "checkpoints/clean_drn_d_22_cityscapes.pth",
                 "--output-prefix", "baseline_drn_d_22_pgd_equidefense",
+                "--reverse-multiply", "1.5",
+                "--num-views", "7",
                 "--batch-size", "2"
             ],
             "prefix": "baseline_drn_d_22_pgd_equidefense",

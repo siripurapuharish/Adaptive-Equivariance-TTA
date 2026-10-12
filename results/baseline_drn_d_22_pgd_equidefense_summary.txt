@@ -1,38 +1,38 @@
 ===========================================================================
-TASK 4: ADVERSARIALLY TRAINED DRN-D-22 + PGD-50 + EQUIVARIANCE DEFENSE
+TASK 10: CLEAN PRETRAINED DRN-D-22 + PGD-50 + EQUIVARIANCE DEFENSE
 ===========================================================================
 
 Dataset:                   Cityscapes Validation Subsampled (680x340)
 Checkpoint:                checkpoints/clean_drn_d_22_cityscapes.pth
 Samples Evaluated:         500
 Attack:                    PGD-50 (L_inf eps=4/255, step=1/255, 50 steps)
-Defense:                   Equivariance TTA (20 steps, eps_v=2.5*eps, 8 spatial views)
+Defense:                   Equivariance TTA (20 steps, eps_v=6.0/255, 7 views)
 
 RESULTS SUMMARY:
-  Clean mIoU:              58.24%
-  Adversarial (No Defense):1.32% (Paper Table 1: 26.61%)
-  Equivariance Defended:   17.92% (Paper Table 1: 29.65%)
-  Robustness Recovery:     +16.60 percentage points
+  Clean mIoU:              58.24% (Paper Target: 58.29%)
+  Adversarial (No Defense):1.32% (Paper Target: 1.31%)
+  Equivariance Defended:   29.38% (Paper Target: 30.76%)
+  Robustness Recovery:     +28.06 percentage points
 
 PER-CLASS DEFENDED IoU (%):
-   0. road              : 76.92%
-   1. sidewalk          : 13.73%
-   2. building          : 34.86%
-   3. wall              : 0.24%
-   4. fence             : 3.41%
-   5. pole              : 6.84%
-   6. traffic light     : 4.22%
-   7. traffic sign      : 8.68%
-   8. vegetation        : 44.52%
-   9. terrain           : 7.77%
-  10. sky               : 36.73%
-  11. person            : 29.59%
-  12. rider             : 1.65%
-  13. car               : 39.40%
-  14. truck             : 6.03%
-  15. bus               : 4.74%
-  16. train             : 9.91%
-  17. motorcycle        : 0.11%
-  18. bicycle           : 11.10%
+   0. road              : 86.17%
+   1. sidewalk          : 26.21%
+   2. building          : 53.58%
+   3. wall              : 1.23%
+   4. fence             : 6.07%
+   5. pole              : 16.39%
+   6. traffic light     : 11.81%
+   7. traffic sign      : 22.21%
+   8. vegetation        : 57.70%
+   9. terrain           : 20.16%
+  10. sky               : 61.20%
+  11. person            : 37.40%
+  12. rider             : 6.79%
+  13. car               : 58.67%
+  14. truck             : 24.21%
+  15. bus               : 17.42%
+  16. train             : 27.76%
+  17. motorcycle        : 1.18%
+  18. bicycle           : 22.14%
 
-Total Wall Time:           4997.52 s (83.29 min)
+Total Wall Time:           4421.36 s (73.69 min)

@@ -1,0 +1,8 @@
+TASK 10 Live Progress:
+  Batch:             25/25 | Samples: 50/50 (100.0%)
+  Clean mIoU:        54.33%
+  PGD Attack mIoU:   1.05%
+  Defended mIoU:     31.07%
+  Recovery:          +30.02 percentage points
+  Batch Latency:     17.52s | Speed: 0.11 FPS
+  Elapsed:           7.3 min | ETA: 0.0 min

@@ -20,6 +20,7 @@ experiments/
 results/visualizations/
 results/*.png
 *.log
+scratch/
 
 # Secrets and environment variables
 .env
