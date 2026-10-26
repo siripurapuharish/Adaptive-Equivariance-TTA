@@ -28,14 +28,17 @@ Background facts, configs and baselines are in `REPRODUCTION_REFERENCE.md`. The 
 
 **Evaluation:** PGD, SegPGD, BPDA (+EOT), a full-gradient attack, and a gate-aware adaptive attack. Every number is mean ± std over 3 seeds.
 
-**Success criteria (measured on the 100-image test subset):**
+**Success criteria (measured on `test100`, mean ± std over 3 seeds; baselines from `REPRODUCTION_REFERENCE.md` §4b):**
 
-| Metric | Current baseline | Target |
+| Metric | Baseline (test100, original defense) | Target |
 |:--|:--:|:--:|
-| Clean-model, clean images + defense (T8 analog) | 35.66 (500 img) | clearly higher, ideally > 45 |
-| Clean-model, PGD + defense (T10 analog) | 29.38 (500 img) | within ±0.5 of baseline (the seed noise) |
-| Adv-model, PGD + defense (T4 analog) | 28.48 (500 img) | within ±0.5 of baseline |
-| Defense time per image | ~8 s (20 steps) | ≥ 3× faster |
+| Clean-model, clean images + defense (T8 analog) | 34.16 ± 0.87 | clearly higher, ideally > 45 |
+| Clean-model, PGD + defense (T10 analog) | 27.34 ± 0.87 | no drop beyond ~1.5 mIoU |
+| Adv-model, clean images + defense (T2 analog) | 43.47 ± 0.30 | higher |
+| Adv-model, PGD + defense (T4 analog) | 27.51 ± 0.71 | no drop beyond ~1.5 mIoU |
+| Defense time per image | ~7.1 s (clean) / ~8.3 s (adv), 20 steps | ≥ 3× faster (re-measure on an idle GPU before P3) |
+
+**Significance:** with 3 seeds, the standard error of a difference between two means is ~0.6 mIoU, so changes smaller than **~1.5 mIoU (approximate)** are treated as noise. The 3-seed std estimates are themselves rough; use 5 seeds for the final headline numbers if time allows.
 
 ---
 

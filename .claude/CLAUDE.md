@@ -25,13 +25,14 @@ Key docs: `results/FINAL_BENCHMARK_REPORT.md` (the 10 reproduced tasks vs. paper
   - P6: adaptive attacks
   - P7: full500 runs, Gradio demo, write-up
 - **Rules:**
+  - Implement from one Claude session only (two sessions editing at once overwrote notes on 2026-10-26).
   - Tune only on `tune100` (val indices i % 5 == 2); report on `test100` (i % 5 == 0) / `full500`. Interleaved because the val list is sorted by city.
   - Run experiments with `python -m equi_lib.runner --model {clean,adv} --split test100 --seeds 0 1 2 --modes clean pgd clean+def pgd+def` (see `equi_lib/runner.py`).
   - New results go in `results/improvements/`; never overwrite the reproduction results in `results/*.json`.
   - Error map is computed from the input and detached (stop-gradient).
 - **Progress:** update the line below as phases finish.
   - Schedule: compressed to 25 days on 2026-10-26 (day 25 = 2026-11-19). P0 days 1–2, P1 day 3, P2 day 4 (go/no-go), P3 days 5–7, P4 days 8–12, P5 days 13–14, P6 days 15–20, P7 days 21–25. See the table at the top of `IMPLEMENTATION_PLAN.md`.
-  - Status: P0 done 2026-10-26 (`equi_lib/` reproduces full500 seed-42 baselines within 0.05; PGD cache and original-defense wrapper verified). 3-seed test100 baselines done 2026-10-26 (4 h 17 min; files `results/improvements/baseline_{clean,adv}_test100_s{0,1,2}.json`; also in REPRODUCTION_REFERENCE.md section 4b). Improvements below ~1.5 mIoU are not significant. Note B closed (no measurable effect). Next: P1 (`EquiDefense` + `error_map()`), then the P2 go/no-go.
+  - Status: P0 done 2026-10-26 (`equi_lib/` reproduces full500 seed-42 baselines within 0.05; PGD cache and original-defense wrapper verified). 3-seed test100 baselines done 2026-10-26 (4 h 17 min; files `results/improvements/baseline_{clean,adv}_test100_s{0,1,2}.json`; also in REPRODUCTION_REFERENCE.md section 4b). Improvements below ~1.5 mIoU are not significant. Note B: no effect larger than ~2 mIoU found (1 seed only). Next: P1 (`EquiDefense` + `error_map()`), then the P2 go/no-go. GPU profiling (per-stage time, peak memory, idle GPU) is deferred until after P1 but must be done before P3.
   - Own baselines, test100, mean ± std over 3 seeds (original defense):
 
     | Model | clean | PGD-50 | clean+def | PGD+def |

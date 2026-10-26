@@ -3,8 +3,11 @@ import torch.nn as nn
 
 from .metrics import align_output
 
+# Standard PGD-50 setting (REPRODUCTION_REFERENCE.md section 1). The cache validates against these.
+PGD_PARAMS = {"eps": 4.0 / 255.0, "step": 1.0 / 255.0, "steps": 50}
 
-def pgd(model, normalize, x, y, eps=4.0 / 255.0, step=1.0 / 255.0, steps=50):
+
+def pgd(model, normalize, x, y, eps=PGD_PARAMS["eps"], step=PGD_PARAMS["step"], steps=PGD_PARAMS["steps"]):
     """Untargeted L_inf PGD with random start; same logic as evaluate_equi_defense.generate_pgd_perturbation."""
     criterion = nn.NLLLoss(ignore_index=255)
     x = x.detach()

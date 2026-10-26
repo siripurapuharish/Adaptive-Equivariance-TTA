@@ -17,7 +17,7 @@ import numpy as np
 import torch
 
 from . import RESULTS_DIR, ROOT_DIR
-from .attacks import pgd
+from .attacks import PGD_PARAMS, pgd
 from .cache import PGDCache
 from .data import load_batch, split_indices
 from .defenses import DEFENSES
@@ -28,12 +28,16 @@ from .seed import set_seed
 warnings.filterwarnings("ignore")  # upstream code uses deprecated upsample/affine_grid calls
 
 MODES = ("clean", "pgd", "clean+def", "pgd+def")
-ATTACK_EPS = 4.0 / 255.0  # matches the attacks.pgd default
+ATTACK_EPS = PGD_PARAMS["eps"]
 
 
 def git_hash() -> str:
+    """Short commit id, with '-dirty' if tracked files have uncommitted changes."""
     try:
-        return subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], cwd=ROOT_DIR, text=True).strip()
+        head = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], cwd=ROOT_DIR, text=True).strip()
+        changes = subprocess.check_output(["git", "status", "--porcelain", "--untracked-files=no"],
+                                          cwd=ROOT_DIR, text=True).strip()
+        return head + ("-dirty" if changes else "")
     except Exception:
         return "unknown"
 
@@ -43,7 +47,7 @@ def run_seed(args, seed, model, normalize, defense, indices, device):
     meters = {m: ConfusionMeter() for m in args.modes}
     secs = defaultdict(float)
     need_pgd = any(m.startswith("pgd") for m in args.modes)
-    cache = PGDCache(args.model, seed) if (need_pgd and not args.no_cache) else None
+    cache = PGDCache(args.model, seed, PGD_PARAMS) if (need_pgd and not args.no_cache) else None
 
     for b in range(0, len(indices), args.batch_size):
         idx = indices[b:b + args.batch_size]
@@ -62,7 +66,7 @@ def run_seed(args, seed, model, normalize, defense, indices, device):
                 delta = torch.clamp(cache.get(idx, device), -ATTACK_EPS, ATTACK_EPS)
                 delta = torch.clamp(delta, -x, 1.0 - x)
             else:
-                delta = pgd(model, normalize, x, y)
+                delta = pgd(model, normalize, x, y, **PGD_PARAMS)
                 if cache is not None:
                     cache.put(idx, delta)
             torch.cuda.synchronize()
