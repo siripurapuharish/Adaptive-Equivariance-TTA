@@ -16,6 +16,7 @@ from torchvision.transforms import transforms
 
 from learning.transform_geo import rot_img
 
+OPTIMIZERS = ("original", "one_step", "sign_decay", "momentum")
 LAYER_IND = 1          # DRNSeg output [1]: 19-channel logits before the 8x upsampling
 ANGLE_R = 15           # rotation views: uniform in [-15, 15] degrees
 UPSTREAM_PI = 3.1415926  # upstream converts degrees with this constant, not math.pi
@@ -37,8 +38,10 @@ class EquiDefense:
                  step_size=1.0, device="cuda"):
         if not 1 <= num_views <= 9:
             raise ValueError("num_views must be in 1..9 (identity + up to 8 transforms)")
-        if optimizer != "original":
-            raise ValueError(f"optimizer {optimizer!r} not implemented yet (P3)")
+        if optimizer not in OPTIMIZERS:
+            raise ValueError(f"optimizer {optimizer!r} not in {OPTIMIZERS}")
+        if optimizer == "one_step" and steps != 1:
+            raise ValueError("one_step uses steps=1")
         self.model, self.normalize = model, normalize
         self.eps_v, self.num_views, self.steps = eps_v, num_views, steps
         self.optimizer, self.step_size = optimizer, step_size
@@ -119,6 +122,8 @@ class EquiDefense:
 
     def purify_delta(self, x):
         """Returns the defense perturbation delta (upstream return value)."""
+        if self.optimizer != "original":
+            return self._purify_new(x)
         global_mask = self._global_mask(x)
         eps = self.eps_v
         delta = torch.zeros_like(x)
@@ -135,6 +140,40 @@ class EquiDefense:
             g = g.sign()
             delta = delta.detach() - self.step_size * g
             delta = torch.clamp(delta, min=-eps, max=eps)
+            delta = torch.max(torch.min(delta, 1 - x), 0 - x)
+        return delta.detach()
+
+    def _step_sizes(self):
+        """Cosine decay from 2*eps_v (a full-range sign step, as upstream's effective step) to eps_v/4."""
+        eps, T = self.eps_v, self.steps
+        if T == 1:
+            return [2 * eps]
+        return [eps / 4 + (2 * eps - eps / 4) * 0.5 * (1 + torch.cos(torch.tensor(torch.pi * i / (T - 1))).item())
+                for i in range(T)]
+
+    def _purify_new(self, x):
+        """P3 optimisers (same objective as upstream, no gradient noise):
+          one_step   : start at a random corner of the eps_v box (where upstream's 19 noisy steps end,
+                       REPRODUCTION_REFERENCE.md N1), then one sign step of size 2*eps_v
+          sign_decay : uniform random start, T sign steps with cosine-decayed step size
+          momentum   : as sign_decay, but steps along sign(m), m <- 0.9 m + g / ||g||_1 (per image; MI-FGSM)
+        """
+        eps = self.eps_v
+        keep_all = torch.ones(1, 1, 1, 1, dtype=torch.bool, device=x.device)  # upstream's mask keeps everything
+        if self.optimizer == "one_step":
+            delta = eps * torch.sign(torch.empty_like(x).uniform_(-1, 1))
+        else:
+            delta = torch.empty_like(x).uniform_(-eps, eps)
+        delta = torch.max(torch.min(delta, 1 - x), 0 - x)
+        m = torch.zeros_like(x)
+        for eta in self._step_sizes():
+            delta = delta.detach().requires_grad_(True)
+            cost = self.loss(delta + x, keep_all)
+            g = torch.autograd.grad(cost, delta)[0]
+            if self.optimizer == "momentum":
+                m = 0.9 * m + g / (g.abs().sum(dim=(1, 2, 3), keepdim=True) + 1e-12)
+                g = m
+            delta = torch.clamp(delta.detach() - eta * torch.sign(g), -eps, eps)
             delta = torch.max(torch.min(delta, 1 - x), 0 - x)
         return delta.detach()
 

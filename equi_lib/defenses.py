@@ -24,4 +24,19 @@ class OriginalDefense:
         return torch.clamp(x + delta, 0.0, 1.0)
 
 
-DEFENSES = {"original": OriginalDefense}
+def _equi(optimizer, steps):
+    def make(model, normalize, eps_v, num_views, device="cuda"):
+        from .defense import EquiDefense
+        return EquiDefense(model, normalize, eps_v, num_views, steps=steps, optimizer=optimizer, device=device)
+    return make
+
+
+# "original" calls the upstream function; the others use equi_lib.defense.EquiDefense (P3 optimisers).
+DEFENSES = {
+    "original": OriginalDefense,
+    "one_step": _equi("one_step", 1),
+    "sign_decay3": _equi("sign_decay", 3),
+    "sign_decay5": _equi("sign_decay", 5),
+    "momentum3": _equi("momentum", 3),
+    "momentum5": _equi("momentum", 5),
+}
