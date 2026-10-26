@@ -30,7 +30,16 @@ Key docs: `results/FINAL_BENCHMARK_REPORT.md` (the 10 reproduced tasks vs. paper
   - New results go in `results/improvements/`; never overwrite the reproduction results in `results/*.json`.
   - Error map is computed from the input and detached (stop-gradient).
 - **Progress:** update the line below as phases finish.
-  - Status: P0 done 2026-10-26 (`equi_lib/` reproduces full500 seed-42 baselines within 0.05; PGD cache and original-defense wrapper verified). Next: overnight 3-seed test100 baselines, then P1.
+  - Schedule: compressed to 25 days on 2026-10-26 (day 25 = 2026-11-19). P0 days 1–2, P1 day 3, P2 day 4 (go/no-go), P3 days 5–7, P4 days 8–12, P5 days 13–14, P6 days 15–20, P7 days 21–25. See the table at the top of `IMPLEMENTATION_PLAN.md`.
+  - Status: P0 done 2026-10-26 (`equi_lib/` reproduces full500 seed-42 baselines within 0.05; PGD cache and original-defense wrapper verified). 3-seed test100 baselines done 2026-10-26 (4 h 17 min; files `results/improvements/baseline_{clean,adv}_test100_s{0,1,2}.json`). Next: P1 (`EquiDefense` + `error_map()`), then the P2 go/no-go.
+  - Own baselines, test100, mean ± std over 3 seeds (original defense):
+
+    | Model | clean | PGD-50 | clean+def | PGD+def |
+    |:--|:--:|:--:|:--:|:--:|
+    | Clean | 58.05 | 1.31 ± 0.05 | 34.16 ± 0.87 | 27.34 ± 0.87 |
+    | Adv-trained | 51.07 | 24.84 ± 0.02 | 43.47 ± 0.30 | 27.51 ± 0.71 |
+
+    Note B (upstream-style noise, seed 0): clean model 34.51 vs 35.08 without noise; adv model 44.16 vs 43.71. Differences are about 0.5, the size of the seed noise (1 seed only), so defending plain x looks fine. The 20-step defense costs ~7–20 s/image here, about 2× the plan's old estimate.
 
 ## Layout
 

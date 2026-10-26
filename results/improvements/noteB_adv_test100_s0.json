@@ -1,0 +1,55 @@
+{
+  "config": {
+    "model": "adv",
+    "split": "test100",
+    "seeds": [
+      0
+    ],
+    "modes": [
+      "clean+def"
+    ],
+    "defense": "original",
+    "limit": null,
+    "batch_size": 2,
+    "no_cache": false,
+    "clean_noise": true,
+    "tag": "noteB_adv",
+    "preset": {
+      "ckpt": "checkpoints/advtrain_drn_d_22_cityscapes.pth.tar",
+      "eps_v": 0.0392156862745098,
+      "num_views": 9
+    },
+    "num_images": 100,
+    "git": "ec605c7"
+  },
+  "seed": 0,
+  "miou": {
+    "clean+def": 44.16145432370176
+  },
+  "per_class_iou": {
+    "clean+def": {
+      "road": 84.38,
+      "sidewalk": 45.92,
+      "building": 76.8,
+      "wall": 13.94,
+      "fence": 28.38,
+      "pole": 19.83,
+      "traffic light": 15.51,
+      "traffic sign": 36.85,
+      "vegetation": 73.32,
+      "terrain": 9.67,
+      "sky": 90.49,
+      "person": 52.26,
+      "rider": 24.58,
+      "car": 78.87,
+      "truck": 39.57,
+      "bus": 69.39,
+      "train": 10.29,
+      "motorcycle": 33.39,
+      "bicycle": 35.64
+    }
+  },
+  "sec_per_image": {
+    "clean+def": 8.643112397193908
+  }
+}
