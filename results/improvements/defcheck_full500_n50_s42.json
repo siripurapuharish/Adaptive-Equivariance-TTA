@@ -1,0 +1,55 @@
+{
+  "config": {
+    "model": "clean",
+    "split": "full500",
+    "seeds": [
+      42
+    ],
+    "modes": [
+      "pgd+def"
+    ],
+    "defense": "original",
+    "limit": 50,
+    "batch_size": 2,
+    "no_cache": true,
+    "tag": "defcheck",
+    "preset": {
+      "ckpt": "checkpoints/clean_drn_d_22_cityscapes.pth",
+      "eps_v": 0.023529411764705882,
+      "num_views": 7
+    },
+    "num_images": 50,
+    "git": "f201e57"
+  },
+  "seed": 42,
+  "miou": {
+    "pgd+def": 31.566773399387223
+  },
+  "per_class_iou": {
+    "pgd+def": {
+      "road": 88.22,
+      "sidewalk": 25.61,
+      "building": 53.34,
+      "wall": 0.0,
+      "fence": 8.36,
+      "pole": 19.48,
+      "traffic light": 15.84,
+      "traffic sign": 34.06,
+      "vegetation": 63.93,
+      "terrain": 19.78,
+      "sky": 46.52,
+      "person": 34.91,
+      "rider": 16.69,
+      "car": 59.39,
+      "truck": 40.45,
+      "bus": 8.23,
+      "train": 30.63,
+      "motorcycle": 4.17,
+      "bicycle": 30.16
+    }
+  },
+  "sec_per_image": {
+    "pgd_attack": 1.4370461988449097,
+    "pgd+def": 7.148529644012451
+  }
+}

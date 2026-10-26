@@ -30,7 +30,7 @@ Key docs: `results/FINAL_BENCHMARK_REPORT.md` (the 10 reproduced tasks vs. paper
   - New results go in `results/improvements/`; never overwrite the reproduction results in `results/*.json`.
   - Error map is computed from the input and detached (stop-gradient).
 - **Progress:** update the line below as phases finish.
-  - Status: plan written, no phase started yet.
+  - Status: P0 done 2026-10-26 (`equi_lib/` reproduces full500 seed-42 baselines within 0.05; PGD cache and original-defense wrapper verified). Next: overnight 3-seed test100 baselines, then P1.
 
 ## Layout
 
