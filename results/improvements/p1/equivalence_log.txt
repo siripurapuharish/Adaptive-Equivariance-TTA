@@ -1,0 +1,13 @@
+
+=== clean model: eps_v=6.0/255, 7 views
+[PASS] delta: upstream-vs-rerun mismatch 4.74e-02 (max |diff| 4.71e-02); new-vs-upstream 3.22e-02 (max |diff| 4.71e-02); limit 9.47e-02
+[PASS] mIoU (20 images, PGD+def): upstream 24.975, new 25.138, |diff| 0.163 (limit 0.3)  [312s]
+[PASS] error_map: shapes (2, 43, 85) / (2, 340, 680), range [0.107, 1.183]; mean e clean 0.1553 vs attacked 0.7393 (info only)
+
+=== adv model: eps_v=10.0/255, 9 views
+[PASS] delta: upstream-vs-rerun mismatch 5.05e-05 (max |diff| 7.84e-02); new-vs-upstream 4.61e-05 (max |diff| 7.84e-02); limit 1.11e-04
+[PASS] mIoU (20 images, PGD+def): upstream 24.346, new 24.351, |diff| 0.005 (limit 0.3)  [363s]
+[PASS] error_map: shapes (2, 43, 85) / (2, 340, 680), range [0.026, 0.333]; mean e clean 0.1362 vs attacked 0.1324 (info only)
+
+OVERALL: PASS {'clean': True, 'adv': True}
+exit code 0
