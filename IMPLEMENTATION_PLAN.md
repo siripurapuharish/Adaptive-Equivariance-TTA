@@ -52,7 +52,7 @@ P0 Shared infrastructure ──► P1 Clean defense module ──► P2 Go/no-go
 
 | File | Contents |
 |:--|:--|
-| `data.py` | `load_split(name)` returns tensors for `test100` (val images 0–99), `tune100` (val images 400–499), or `full500` |
+| `data.py` | `split_indices(name)` / `load_batch(idx)` for `test100` (val indices i % 5 == 0), `tune100` (i % 5 == 2), or `full500`. Interleaved because the val list is sorted by city |
 | `model.py` | `load_model(ckpt)` (copied from `evaluate_equi_defense.py:78`), `normalize()` with the info.json mean/std |
 | `metrics.py` | `align_output()` (bilinear 344→340), confusion matrix, mIoU, per-class IoU |
 | `seed.py` | `set_seed(s)` for random / numpy / torch / cuda |

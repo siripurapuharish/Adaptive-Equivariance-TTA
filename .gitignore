@@ -31,3 +31,6 @@ scratch/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Cached PGD deltas for equi_lib experiments (large, regenerable)
+results/improvements/cache/

@@ -25,7 +25,8 @@ Key docs: `results/FINAL_BENCHMARK_REPORT.md` (the 10 reproduced tasks vs. paper
   - P6: adaptive attacks
   - P7: full500 runs, Gradio demo, write-up
 - **Rules:**
-  - Tune only on `tune100` (val images 400–499); report on `test100` (images 0–99) / `full500`.
+  - Tune only on `tune100` (val indices i % 5 == 2); report on `test100` (i % 5 == 0) / `full500`. Interleaved because the val list is sorted by city.
+  - Run experiments with `python -m equi_lib.runner --model {clean,adv} --split test100 --seeds 0 1 2 --modes clean pgd clean+def pgd+def` (see `equi_lib/runner.py`).
   - New results go in `results/improvements/`; never overwrite the reproduction results in `results/*.json`.
   - Error map is computed from the input and detached (stop-gradient).
 - **Progress:** update the line below as phases finish.
