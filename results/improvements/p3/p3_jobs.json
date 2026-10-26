@@ -18,7 +18,7 @@
    "--tag",
    "p3_clean_original"
   ],
-  24
+  23.0
  ],
  [
   "P3 clean one_step",
@@ -39,7 +39,7 @@
    "--tag",
    "p3_clean_one_step"
   ],
-  5.6
+  2.1
  ],
  [
   "P3 clean sign_decay3",
@@ -60,7 +60,7 @@
    "--tag",
    "p3_clean_sign_decay3"
   ],
-  12.8
+  4.3
  ],
  [
   "P3 clean sign_decay5",
@@ -81,7 +81,7 @@
    "--tag",
    "p3_clean_sign_decay5"
   ],
-  20.0
+  6.5
  ],
  [
   "P3 clean momentum3",
@@ -102,7 +102,7 @@
    "--tag",
    "p3_clean_momentum3"
   ],
-  12.8
+  4.3
  ],
  [
   "P3 clean momentum5",
@@ -123,7 +123,7 @@
    "--tag",
    "p3_clean_momentum5"
   ],
-  20.0
+  6.5
  ],
  [
   "P3 adv original",
@@ -144,7 +144,7 @@
    "--tag",
    "p3_adv_original"
   ],
-  28
+  29.7
  ],
  [
   "P3 adv one_step",
@@ -165,7 +165,7 @@
    "--tag",
    "p3_adv_one_step"
   ],
-  6.0
+  2.4
  ],
  [
   "P3 adv sign_decay3",
@@ -186,7 +186,7 @@
    "--tag",
    "p3_adv_sign_decay3"
   ],
-  14.0
+  5.3
  ],
  [
   "P3 adv sign_decay5",
@@ -207,7 +207,7 @@
    "--tag",
    "p3_adv_sign_decay5"
   ],
-  22.0
+  8.2
  ],
  [
   "P3 adv momentum3",
@@ -228,7 +228,7 @@
    "--tag",
    "p3_adv_momentum3"
   ],
-  14.0
+  5.3
  ],
  [
   "P3 adv momentum5",
@@ -249,6 +249,6 @@
    "--tag",
    "p3_adv_momentum5"
   ],
-  22.0
+  8.2
  ]
 ]

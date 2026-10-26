@@ -1,0 +1,18 @@
+Updated: 2026-10-27 02:29:19
+Started: 2026-10-27 00:51:01
+Overall: 100.0%   elapsed 1:38:17   remaining ~0:00:00
+
+[done    ] P3 clean original
+[done    ] P3 clean one_step
+[done    ] P3 clean sign_decay3
+[done    ] P3 clean sign_decay5
+[done    ] P3 clean momentum3
+[done    ] P3 clean momentum5
+[done    ] P3 adv original
+[done    ] P3 adv one_step
+[done    ] P3 adv sign_decay3
+[done    ] P3 adv sign_decay5
+[done    ] P3 adv momentum3
+[done    ] P3 adv momentum5
+
+Latest: P3 adv momentum5: done
