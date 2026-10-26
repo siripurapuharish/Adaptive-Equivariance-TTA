@@ -1,0 +1,10 @@
+Updated: 2026-10-27 03:02:52
+Started: 2026-10-27 02:30:25
+Overall: 100.0%   elapsed 0:32:26   remaining ~0:00:00
+
+[done    ] P3 confirm clean one_step
+[done    ] P3 confirm clean sign_decay3
+[done    ] P3 confirm adv one_step
+[done    ] P3 confirm adv sign_decay3
+
+Latest: P3 confirm adv sign_decay3: done

@@ -1,0 +1,82 @@
+{
+  "config": {
+    "model": "adv",
+    "split": "test100",
+    "seeds": [
+      0,
+      1,
+      2
+    ],
+    "modes": [
+      "clean+def",
+      "pgd+def"
+    ],
+    "defense": "sign_decay3",
+    "limit": null,
+    "batch_size": 2,
+    "no_cache": false,
+    "clean_noise": false,
+    "tag": "p3confirm_adv_sign_decay3",
+    "preset": {
+      "ckpt": "checkpoints/advtrain_drn_d_22_cityscapes.pth.tar",
+      "eps_v": 0.0392156862745098,
+      "num_views": 9
+    },
+    "num_images": 100,
+    "git": "16a8a56"
+  },
+  "seed": 1,
+  "miou": {
+    "clean+def": 44.16976621006388,
+    "pgd+def": 26.934623836087592
+  },
+  "per_class_iou": {
+    "clean+def": {
+      "road": 88.42,
+      "sidewalk": 52.53,
+      "building": 78.61,
+      "wall": 13.19,
+      "fence": 28.26,
+      "pole": 20.72,
+      "traffic light": 14.43,
+      "traffic sign": 36.87,
+      "vegetation": 76.58,
+      "terrain": 13.64,
+      "sky": 90.87,
+      "person": 51.42,
+      "rider": 25.08,
+      "car": 79.57,
+      "truck": 28.58,
+      "bus": 65.75,
+      "train": 11.97,
+      "motorcycle": 25.53,
+      "bicycle": 37.2
+    },
+    "pgd+def": {
+      "road": 77.69,
+      "sidewalk": 27.16,
+      "building": 62.69,
+      "wall": 1.36,
+      "fence": 5.76,
+      "pole": 16.33,
+      "traffic light": 9.52,
+      "traffic sign": 19.73,
+      "vegetation": 58.76,
+      "terrain": 4.93,
+      "sky": 87.03,
+      "person": 37.99,
+      "rider": 12.39,
+      "car": 59.44,
+      "truck": 1.87,
+      "bus": 4.93,
+      "train": 0.0,
+      "motorcycle": 7.22,
+      "bicycle": 16.96
+    }
+  },
+  "sec_per_image": {
+    "pgd_attack": 0.0009948015213012695,
+    "clean+def": 1.2411220359802246,
+    "pgd+def": 1.2379445147514343
+  }
+}

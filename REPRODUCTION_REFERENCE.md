@@ -131,6 +131,13 @@ Both differences are inside the seed spread (std 0.87 / 0.30). This is **one see
   - (c) Batch size doesn't change the defense result (per-sample losses are summed, and the sign is unaffected).
 - Probe script: `scratch/probe_defense.py` (run from the repo root). It patches a recorder in before `gradient.sign_()`.
 
+- **Confirmed by ablation (P3, test100, 3 seeds):** a single sign step from a random corner (`one_step`) gives the same defended mIoU as the 20-step original: PGD+def 26.84 ± 0.62 vs 27.34 ± 0.87 (clean model), 27.51 ± 0.56 vs 27.51 ± 0.71 (adv), at ~20× lower cost (0.35 vs 7.16 s/img; 0.41 vs 8.32).
+
+**N7. Optimising the defense's objective harder hurts robustness on the clean model. CONFIRMED (P3, test100, 3 seeds).** `sign_decay3` (3 noise-free sign steps, step 2ε_v → ε_v/4) reaches a much lower equivariance loss than one step, but:
+- clean model: PGD+def 22.04 ± 0.33 vs 27.34 ± 0.87 (−5.29; every seed −4.5 to −6.4), while clean+def rises to 40.19 ± 1.28 vs 34.16 ± 0.87 (+6.03; every seed +4.6 to +7.6);
+- adv model: no significant change (PGD+def −0.48, clean+def +0.97).
+So on the clean model, a lower equivariance loss trades robustness for clean accuracy rather than improving both. Tune100 runs with momentum and 5 steps showed the same direction (PGD+def 21.4–22.6 vs 25.45).
+
 **N2. `equi4robust.py` and `BPDA.py` can't be imported as shipped.** At import time, `BPDA.py` builds `RotReversal('data/ckpts/advpretrained_ssl_rot_19.pth')`, and that checkpoint isn't released. This is why our stand-alone scripts exist. For the same reason, the **Rotation baseline can't be reproduced**.
 
 **N3. Upstream evaluates 498 or 496 images, not 500.** The val loader uses `drop_last=True` with batch 3, 8 or 16. The effect is negligible; mention it only for completeness.
