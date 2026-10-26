@@ -1,0 +1,77 @@
+
+== Extended P2 adv | tune100 (100 images) | seed 0
+  undefended mIoU: clean 48.13, pgd 25.94, segpgd 23.56, pgd_loweps 35.38
+  changed fraction (sampled): pgd 0.200, segpgd 0.249, pgd_loweps 0.078
+  score                                    pgd px/img          segpgd px/img      pgd_loweps px/img
+  down|l2_softmax                   0.921/0.901           0.920/0.964           0.887/0.635     
+  flip|l2_softmax                   0.896/0.924           0.883/0.980           0.910/0.718     
+  down|sym_kl                       0.896/0.909           0.892/0.958           0.851/0.621     
+  flip|sym_kl                       0.885/0.944           0.868/0.983           0.886/0.733     
+  down|label_flip                   0.872/0.899           0.893/0.975           0.851/0.632     
+  entropy                           0.836/0.705           0.821/0.880           0.900/0.595     
+  rot10|l2_softmax                  0.834/0.714           0.825/0.813           0.827/0.554     
+  rot10|sym_kl                      0.788/0.619           0.777/0.675           0.773/0.516     
+  rot10|label_flip                  0.748/0.725           0.767/0.852           0.776/0.562     
+  shift|l2_softmax                  0.747/0.787           0.733/0.899           0.797/0.641     
+  jitter|l2_softmax                 0.743/0.625           0.761/0.654           0.721/0.568     
+  flip|label_flip                   0.717/0.904           0.749/0.977           0.753/0.700     
+  jitter|label_flip                 0.713/0.639           0.733/0.697           0.709/0.576     
+  up|label_flip                     0.700/0.700           0.711/0.822           0.708/0.580     
+  up|l2_softmax                     0.700/0.672           0.698/0.755           0.690/0.558     
+  jitter|sym_kl                     0.694/0.594           0.719/0.606           0.665/0.553     
+  shift|sym_kl                      0.691/0.774           0.683/0.859           0.727/0.627     
+  up|sym_kl                         0.627/0.467           0.625/0.454           0.615/0.489     
+  flip|cos_logit                    0.600/0.739           0.594/0.794           0.556/0.567     
+  flip|cos_penult                   0.593/0.752           0.580/0.799           0.544/0.565     
+  shift|cos_logit                   0.560/0.621           0.560/0.648           0.566/0.547     
+  down|cos_logit                    0.560/0.636           0.557/0.667           0.485/0.533     
+  shift|cos_penult                  0.554/0.603           0.554/0.618           0.560/0.536     
+  shift|label_flip                  0.550/0.772           0.560/0.901           0.576/0.619     
+  jitter|cos_logit                  0.550/0.571           0.555/0.544           0.502/0.564     
+  jitter|cos_penult                 0.529/0.562           0.534/0.538           0.484/0.557     
+  rot10|cos_logit                   0.508/0.520           0.507/0.516           0.507/0.502     
+  rot10|cos_penult                  0.486/0.486           0.480/0.473           0.476/0.485     
+  down|cos_penult                   0.483/0.549           0.478/0.543           0.402/0.499     
+  defense_set|cos_logit             0.466/0.668           0.465/0.621           0.444/0.536     
+  up|cos_logit                      0.419/0.400           0.422/0.386           0.417/0.471     
+  up|cos_penult                     0.392/0.363           0.390/0.315           0.384/0.446     
+  saved results\improvements\p2\p2ext_adv_tune100_s0.json  [442s]
+
+== Extended P2 clean | tune100 (100 images) | seed 0
+  undefended mIoU: clean 52.14, pgd 1.21, segpgd 0.85, pgd_loweps 1.17
+  changed fraction (sampled): pgd 0.836, segpgd 0.871, pgd_loweps 0.887
+  score                                    pgd px/img          segpgd px/img      pgd_loweps px/img
+  down|l2_softmax                   0.987/1.000           0.986/1.000           0.986/1.000     
+  down|label_flip                   0.958/1.000           0.954/1.000           0.957/1.000     
+  down|cos_logit                    0.919/1.000           0.924/1.000           0.908/1.000     
+  down|sym_kl                       0.913/1.000           0.895/1.000           0.912/1.000     
+  defense_set|cos_logit             0.898/1.000           0.904/1.000           0.903/1.000     
+  up|l2_softmax                     0.852/1.000           0.821/1.000           0.920/1.000     
+  up|cos_logit                      0.829/1.000           0.816/1.000           0.879/1.000     
+  up|label_flip                     0.805/1.000           0.765/1.000           0.882/1.000     
+  rot10|l2_softmax                  0.737/0.966           0.736/0.967           0.808/0.999     
+  rot10|cos_logit                   0.734/0.995           0.758/0.994           0.777/1.000     
+  flip|l2_softmax                   0.731/0.999           0.704/0.999           0.806/1.000     
+  rot10|sym_kl                      0.715/1.000           0.699/1.000           0.773/1.000     
+  flip|sym_kl                       0.712/1.000           0.683/1.000           0.777/1.000     
+  flip|cos_logit                    0.696/1.000           0.694/1.000           0.793/1.000     
+  jitter|l2_softmax                 0.691/0.806           0.744/0.815           0.752/0.896     
+  rot10|label_flip                  0.686/0.957           0.684/0.961           0.772/0.998     
+  down|cos_penult                   0.685/1.000           0.652/1.000           0.691/1.000     
+  shift|sym_kl                      0.680/0.841           0.711/0.880           0.660/0.925     
+  jitter|cos_logit                  0.679/0.804           0.720/0.841           0.697/0.887     
+  up|sym_kl                         0.679/1.000           0.612/1.000           0.803/1.000     
+  entropy                           0.675/0.013           0.710/0.015           0.679/0.029     
+  shift|l2_softmax                  0.674/0.611           0.701/0.687           0.670/0.713     
+  jitter|sym_kl                     0.667/0.896           0.718/0.906           0.714/0.931     
+  shift|cos_penult                  0.666/0.909           0.681/0.881           0.551/0.979     
+  shift|cos_logit                   0.665/0.610           0.683/0.700           0.556/0.893     
+  flip|label_flip                   0.659/0.999           0.632/0.997           0.761/1.000     
+  jitter|label_flip                 0.643/0.796           0.672/0.805           0.713/0.887     
+  jitter|cos_penult                 0.622/0.884           0.629/0.915           0.595/0.913     
+  rot10|cos_penult                  0.614/1.000           0.603/1.000           0.622/1.000     
+  flip|cos_penult                   0.608/1.000           0.580/1.000           0.664/1.000     
+  up|cos_penult                     0.604/1.000           0.554/1.000           0.648/1.000     
+  shift|label_flip                  0.509/0.597           0.510/0.674           0.509/0.691     
+  saved results\improvements\p2\p2ext_clean_tune100_s0.json  [430s]
+exit 0
