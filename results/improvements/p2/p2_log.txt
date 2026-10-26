@@ -1,0 +1,19 @@
+
+== P2 clean | tune100 (100 images) | seed 0
+  image_auroc                            equi 1.0000 | entropy 0.0132 (reversed 0.9868)
+  pixel_auroc_changed                    equi 0.8991 | entropy 0.6757 (reversed 0.3243)
+  pixel_auroc_became_wrong               equi 0.9149 | entropy 0.6684 (reversed 0.3316)
+  pixel_auroc_pooled_changed_vs_clean    equi 0.9934 | entropy 0.1723 (reversed 0.8277)
+  changed fraction 0.836; became-wrong fraction 0.852
+  DECISION: image PASS (>= 0.9), pixel PASS (>= 0.7)
+  saved results\improvements\p2\p2_clean_tune100_s0.json
+
+== P2 adv | tune100 (100 images) | seed 0
+  image_auroc                            equi 0.5205 | entropy 0.7046 (reversed 0.2954)
+  pixel_auroc_changed                    equi 0.4705 | entropy 0.8347 (reversed 0.1653)
+  pixel_auroc_became_wrong               equi 0.4609 | entropy 0.8450 (reversed 0.1550)
+  pixel_auroc_pooled_changed_vs_clean    equi 0.4916 | entropy 0.8105 (reversed 0.1895)
+  changed fraction 0.200; became-wrong fraction 0.200
+  DECISION: image FAIL (>= 0.9), pixel FAIL (>= 0.7)
+  saved results\improvements\p2\p2_adv_tune100_s0.json
+exit 0
