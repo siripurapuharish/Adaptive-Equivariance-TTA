@@ -1,0 +1,3 @@
+create_graph=True: second-order gradient not computable (derivative for aten::grid_sampler_2d_backward is not implemented)
+create_graph=False: cosine all pixels 0.987982 | clamp-inactive pixels 1.000000 (rel. diff 8.98e-08, 93.21% of entries) | peak mem 21.9 GB
+Second-order terms only enter through sign(g), whose derivative is 0 almost everywhere, so the create_graph=False gradient is the exact gradient.

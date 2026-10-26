@@ -1,0 +1,57 @@
+{
+ "model": "adv",
+ "num_views": 9,
+ "steps": 20,
+ "images_timed": 10,
+ "sec_per_image": {
+  "base_forward_nograd": 0.0141243799989752,
+  "pgd50": 1.445688230000087,
+  "defense_full": 8.38085776999942,
+  "step_base_forward": 0.014736410000477918,
+  "step_view_forwards": 0.20022664999996778,
+  "step_backward": 0.21289603000041096,
+  "step_update": 0.0003171900003508199
+ },
+ "one_step_sec_per_image": {
+  "step_base_forward": 0.014736410000477918,
+  "step_view_forwards": 0.20022664999996778,
+  "step_backward": 0.21289603000041096,
+  "step_update": 0.0003171900003508199
+ },
+ "per_view_forward_backward_sec_per_image": {
+  "cnt0 resize 2x": 0.11686727999913274,
+  "cnt1 resize 0.3x": 0.005515989999548765,
+  "cnt2 resize 2x": 0.11692548000137322,
+  "cnt3 resize 0.5x": 0.008502500000759028,
+  "cnt4 rotate": 0.027354290000221226,
+  "cnt5 rotate": 0.027938909999647876,
+  "cnt6 jitter+resize 1x": 0.03967075000036857,
+  "cnt7 flip+resize 1x": 0.027469790000759532
+ },
+ "per_view_share": {
+  "cnt0 resize 2x": 0.3156485115397811,
+  "cnt1 resize 0.3x": 0.01489821644722805,
+  "cnt2 resize 2x": 0.3158057047599788,
+  "cnt3 resize 0.5x": 0.022964524113391623,
+  "cnt4 rotate": 0.07388159391457919,
+  "cnt5 rotate": 0.0754606024500459,
+  "cnt6 jitter+resize 1x": 0.1071472972535686,
+  "cnt7 flip+resize 1x": 0.0741935495214268
+ },
+ "peak_memory_by_batch": {
+  "1": {
+   "peak_gb": 3.991537664,
+   "sec_per_img": 11.27840269999433
+  },
+  "2": {
+   "peak_gb": 7.8060288,
+   "sec_per_img": 8.272266600000876
+  },
+  "4": {
+   "peak_gb": 15.310922752,
+   "sec_per_img": 26.650182750001477
+  }
+ },
+ "gpu": "NVIDIA RTX 2000 Ada Generation",
+ "git": "d069a1f"
+}
