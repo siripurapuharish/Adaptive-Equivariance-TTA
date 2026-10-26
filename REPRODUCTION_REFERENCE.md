@@ -28,7 +28,16 @@ Labels used: **CONFIRMED** = shown by the paper, code or a measurement. **REFUTE
 
 **Note A (step size).** Each defense step is `delta = clamp(delta − step·sign(g), −ε_v, ε_v)`. Any step ≥ 2ε_v always lands on ±ε_v, so the code's step of 1.0 and the paper's η = 2ε_v give the same result. CONFIRMED (algebra).
 
-**Note B (clean-image runs in upstream).** Upstream runs the "clean + defense" rows with `step_num=0`. `PGD_attack_new` with 0 steps returns its random start, so the defended input is **x + U(−4/255, 4/255)**, not x. Our Task 2 and Task 8 scripts defend plain x. The effect is OPEN.
+**Note B (clean-image runs in upstream).** Upstream runs the "clean + defense" rows with `step_num=0`. `PGD_attack_new` with 0 steps returns its random start, so the defended input is **x + U(−4/255, 4/255)**, not x. Our Task 2 and Task 8 scripts defend plain x.
+
+**Note B is CLOSED: no measurable effect** (test100, seed 0; `equi_lib.runner --clean-noise`):
+
+| Model | Plain x (seed 0) | x + noise | Difference |
+|:--|:--:|:--:|:--:|
+| Clean | 35.08 | 34.51 | −0.57 |
+| Adv | 43.71 | 44.16 | +0.45 |
+
+Both differences are inside the seed spread (std 0.87 / 0.30), so Note B does **not** explain the Task 2 or Task 8 gaps. We keep plain x as the main setting.
 
 **Note C (Task 2 ε_v).** Paper Table 7 lists clean = 48.74 at ε_v = 10/255, which is our Task 2 setting. The upstream code comment puts "clean rev 48.74" at multiplier 2 (8/255), where Table 7 gives 48.84. Either value is fine. This is **not** the cause of the Task 2 gap.
 
@@ -139,15 +148,30 @@ Labels used: **CONFIRMED** = shown by the paper, code or a measurement. **REFUTE
 | Task | Setting | Paper | Ours | Status |
 |:--|:--|:--:|:--:|:--|
 | T1 | Adv, clean | 53.23 | 51.34 | Config correct. Gap OPEN (checkpoint / alignment) |
-| T2 | Adv, clean + equi (10/255, 9 views) | 48.74 | 44.06 | Config matches paper. Missing the Note B noise. Gap OPEN |
+| T2 | Adv, clean + equi (10/255, 9 views) | 48.74 | 44.06 | Config matches paper. Note B ruled out. Gap OPEN |
 | T3 | Adv, PGD-50 | 26.61 | 25.26 | Valid |
 | T4 | Adv, PGD-50 + equi | 29.65 | 28.48 | Valid (+3.22 recovery vs paper +3.04) |
 | T5 | Adv, BPDA, no defense (≡ PGD) | 26.61 | 25.25 | Valid |
 | T6 | Adv, BPDA-10 + equi | 29.83 | 22.55 | Implementation correct. Gap OPEN, report honestly |
 | T7 | Clean, clean | 58.29 | 58.24 | Valid |
-| T8 | Clean, clean + equi (6/255, 7 views) | 37.95 | 35.66 | Config inferred (Note D). Missing the Note B noise |
+| T8 | Clean, clean + equi (6/255, 7 views) | 37.95 | 35.66 | Config inferred (Note D). Note B ruled out |
 | T9 | Clean, PGD-50 | 1.31 | 1.32 | Valid |
 | T10 | Clean, PGD-50 + equi (6/255, 7 views) | 30.76 | 29.38 | Valid. Authors' code got 32.9 (N4) |
+
+### 4b. Improvement baselines (`test100`, 3 seeds, `equi_lib`; compare all improvements against THESE)
+
+`test100` = val indices i % 5 == 0 (all three cities). Mean ± std over seeds 0, 1, 2. Run 2026-10-26.
+
+| Model | Clean | PGD | Clean + def | PGD + def | Defense sec/img |
+|:--|:--:|:--:|:--:|:--:|:--:|
+| Clean (6/255, 7 views) | 58.05 | 1.31 ± 0.05 | **34.16 ± 0.87** | **27.34 ± 0.87** | ~7.2 |
+| Adv (10/255, 9 views) | 51.07 | 24.84 ± 0.02 | **43.47 ± 0.30** | **27.51 ± 0.71** | ~8.3 |
+
+**Noise threshold.** Defended results vary by ~0.3–0.9 std per seed on 100 images, a little more than the 50-image estimate in Gap #5.
+- Comparing two 3-seed means, the standard error of the difference is ~0.6.
+- Treat improvements below ~1.5 mIoU as not significant.
+
+**Timing caveat.** Seed 0's clean+def averaged 44 s/img (others ~7 s), most likely GPU contention during that run; mIoU is unaffected. Measure speed only with the GPU otherwise idle.
 
 ---
 
@@ -195,7 +219,7 @@ Novelty was checked by web search only. Before committing, check Google Scholar'
 [ ] Input 680x340; logits bilinearly aligned 344->340 before EVERY loss and before mIoU
 [ ] Any upstream attack function used? -> alignment patched in (see Gap #4 lines)
 [ ] Config matches Section 1 for the model type (eps_v, num_view, T=20, step 1.0)
-[ ] Clean+defense rows: decide whether to add U(-eps,eps) noise like upstream (Note B), and state it
+[ ] Clean+defense rows: defend plain x (Note B closed: upstream noise has no measurable effect)
 [ ] Seed fixed; improvement claims use >=3 seeds (mean ± std)
 [ ] model.eval(); params requires_grad=False; strict load with 'module.' stripped
 [ ] BPDA = identity backward through the purifier (grad w.r.t. purified image) - this is correct

@@ -31,7 +31,7 @@ Key docs: `results/FINAL_BENCHMARK_REPORT.md` (the 10 reproduced tasks vs. paper
   - Error map is computed from the input and detached (stop-gradient).
 - **Progress:** update the line below as phases finish.
   - Schedule: compressed to 25 days on 2026-10-26 (day 25 = 2026-11-19). P0 days 1–2, P1 day 3, P2 day 4 (go/no-go), P3 days 5–7, P4 days 8–12, P5 days 13–14, P6 days 15–20, P7 days 21–25. See the table at the top of `IMPLEMENTATION_PLAN.md`.
-  - Status: P0 done 2026-10-26 (`equi_lib/` reproduces full500 seed-42 baselines within 0.05; PGD cache and original-defense wrapper verified). 3-seed test100 baselines done 2026-10-26 (4 h 17 min; files `results/improvements/baseline_{clean,adv}_test100_s{0,1,2}.json`). Next: P1 (`EquiDefense` + `error_map()`), then the P2 go/no-go.
+  - Status: P0 done 2026-10-26. test100 3-seed baselines done (REPRODUCTION_REFERENCE.md section 4b; significance threshold ~1.5 mIoU). Note B closed. Next: P1 (EquiDefense + error_map).
   - Own baselines, test100, mean ± std over 3 seeds (original defense):
 
     | Model | clean | PGD-50 | clean+def | PGD+def |
