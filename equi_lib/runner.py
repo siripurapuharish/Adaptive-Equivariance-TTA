@@ -28,6 +28,7 @@ from .seed import set_seed
 warnings.filterwarnings("ignore")  # upstream code uses deprecated upsample/affine_grid calls
 
 MODES = ("clean", "pgd", "clean+def", "pgd+def")
+ATTACK_EPS = 4.0 / 255.0  # matches the attacks.pgd default
 
 
 def git_hash() -> str:
@@ -57,7 +58,9 @@ def run_seed(args, seed, model, normalize, defense, indices, device):
         if need_pgd:
             t = time.time()
             if cache is not None and cache.has(idx):
-                delta = cache.get(idx, device)
+                # float16 storage can overshoot the budget by ~1e-5; re-project onto it.
+                delta = torch.clamp(cache.get(idx, device), -ATTACK_EPS, ATTACK_EPS)
+                delta = torch.clamp(delta, -x, 1.0 - x)
             else:
                 delta = pgd(model, normalize, x, y)
                 if cache is not None:
@@ -69,7 +72,14 @@ def run_seed(args, seed, model, normalize, defense, indices, device):
                 with torch.no_grad():
                     meters["pgd"].update(model(normalize(x_adv))[0], y)
 
-        for mode, inp in (("clean+def", x), ("pgd+def", x_adv if need_pgd else None)):
+        x_clean_def = x
+        if args.clean_noise and "clean+def" in meters:
+            # Upstream runs clean+defense rows with a 0-step PGD, which returns its random start:
+            # x + U(-eps, eps). See REPRODUCTION_REFERENCE.md Note B.
+            noise = torch.empty_like(x).uniform_(-ATTACK_EPS, ATTACK_EPS)
+            x_clean_def = torch.clamp(x + noise, 0.0, 1.0)
+
+        for mode, inp in (("clean+def", x_clean_def), ("pgd+def", x_adv if need_pgd else None)):
             if mode in meters:
                 t = time.time()
                 x_def = defense(inp, y)
@@ -102,6 +112,8 @@ def main():
     ap.add_argument("--limit", type=int, default=None, help="evaluate only the first N images of the split")
     ap.add_argument("--batch-size", type=int, default=2)
     ap.add_argument("--no-cache", action="store_true", help="always regenerate PGD (and don't save it)")
+    ap.add_argument("--clean-noise", action="store_true",
+                    help="clean+def defends x + U(-4/255, 4/255) like upstream (Note B); default defends plain x")
     ap.add_argument("--tag", default=None, help="output name prefix (default: <model>_<defense>)")
     args = ap.parse_args()
 
