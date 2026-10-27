@@ -94,6 +94,9 @@ for tag in ("clean", "adv"):
     check("gate with tau=+inf returns x unchanged", torch.equal(gate(xa), xa))
     st = gate.pop_stats()
     check("gate stats recorded", len(st) == 2 and not any(s["defended"] for s in st))
+    gpi = AdaptiveDefense(model, norm, p["eps_v"], p["num_views"], mode="gate+perimage", **kw)
+    check("gate+perimage with tau=+inf returns x unchanged", torch.equal(gpi(xa), xa))
+    gpi.pop_stats()
     pp = AdaptiveDefense(model, norm, p["eps_v"], p["num_views"], mode="perpixel", **kw)
     em, s = pp.budget(xa)
     lo, hi = em.min().item() / p["eps_v"], em.max().item() / p["eps_v"]

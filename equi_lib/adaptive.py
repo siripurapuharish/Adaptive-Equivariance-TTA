@@ -19,6 +19,8 @@ Modes (everything else fixed, so each is a controlled comparison):
                   histogram, wrong places)
   gate          : skip the defense if s < tau, else global eps_v
   gate+perpixel : skip if s < tau, else perpixel                               <- ours, clean model
+  gate+perimage : skip if s < tau, else perimage                               (plan's P4 fallback, added
+                  2026-10-27 after the pre-registered placement test failed)
 """
 import json
 import os
@@ -29,7 +31,7 @@ import torch.nn.functional as F
 from . import RESULTS_DIR
 from .defense import EquiDefense
 
-MODES = ("global", "perpixel", "perimage", "shuffled", "gate", "gate+perpixel")
+MODES = ("global", "perpixel", "perimage", "shuffled", "gate", "gate+perpixel", "gate+perimage")
 SIGNALS = ("equi", "entropy")
 CALIB_DIR = os.path.join(RESULTS_DIR, "p4")
 
@@ -92,7 +94,7 @@ class AdaptiveDefense:
         eps_map, s = self.budget(x)
         if self.mode in ("global", "gate"):
             eps_map = torch.full_like(eps_map, self.eps_v)
-        elif self.mode == "perimage":
+        elif self.mode in ("perimage", "gate+perimage"):
             eps_map = eps_map.mean(dim=(1, 2, 3), keepdim=True).expand_as(eps_map).contiguous()
         elif self.mode == "shuffled":
             eps_map = torch.roll(eps_map, shifts=(x.size(2) // 2, x.size(3) // 2), dims=(2, 3))
