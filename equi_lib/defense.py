@@ -17,6 +17,11 @@ from torchvision.transforms import transforms
 from learning.transform_geo import rot_img
 
 OPTIMIZERS = ("original", "one_step", "sign_decay", "momentum")
+# M1 (IMPLEMENTATION_PLAN.md): which transforms the defense uses.
+#   full  : upstream views (cnt 0 and 2 are 2x upscales)
+#   no_up : drop the two 2x upscale views (weak in P2, 63-76% of defense time)
+#   up1.5 : the two upscale views at 1.5x instead of 2x
+VIEW_SETS = ("full", "no_up", "up1.5")
 LAYER_IND = 1          # DRNSeg output [1]: 19-channel logits before the 8x upsampling
 ANGLE_R = 15           # rotation views: uniform in [-15, 15] degrees
 UPSTREAM_PI = 3.1415926  # upstream converts degrees with this constant, not math.pi
@@ -35,11 +40,16 @@ def _resize(x, size):
 
 class EquiDefense:
     def __init__(self, model, normalize, eps_v, num_views, steps=20, optimizer="original",
-                 step_size=1.0, device="cuda"):
+                 step_size=1.0, device="cuda", view_set="full"):
         if not 1 <= num_views <= 9:
             raise ValueError("num_views must be in 1..9 (identity + up to 8 transforms)")
         if optimizer not in OPTIMIZERS:
             raise ValueError(f"optimizer {optimizer!r} not in {OPTIMIZERS}")
+        if view_set not in VIEW_SETS:
+            raise ValueError(f"view_set {view_set!r} not in {VIEW_SETS}")
+        if view_set != "full" and optimizer == "original":
+            raise ValueError("view_set applies to the new optimisers only")
+        self.view_set = view_set
         if optimizer == "one_step" and steps != 1:
             raise ValueError("one_step uses steps=1")
         self.model, self.normalize = model, normalize
@@ -59,6 +69,8 @@ class EquiDefense:
         H, W = x.size(2), x.size(3)
         out = []
         for cnt in range(self.num_views - 1):
+            if self.view_set == "no_up" and cnt in (0, 2):
+                continue
             theta = None
             if cnt == 0:
                 ratio_s = random.uniform(0.8, 1.2)  # upstream draws this and then overwrites it
@@ -72,6 +84,8 @@ class EquiDefense:
             if cnt == 3:
                 w_s = 0.5
             if cnt < 4:
+                if self.view_set == "up1.5" and cnt in (0, 2):
+                    w_s = 1.5
                 ratio_s = random.uniform(0.8, 1.2)
                 xv = _resize(x, (int(H * w_s), int(W * w_s * ratio_s)))
             elif cnt == 6:
@@ -105,13 +119,17 @@ class EquiDefense:
             f = self._features(x)
         return torch.rand([1, 1, f.size(2), f.size(3)]).to(x.device) < 2
 
-    def loss(self, x_adv, global_mask):
-        """Upstream objective: negative sum of pairwise dot products of globally L2-normalised features."""
+    def loss(self, x_adv, global_mask, weight=None):
+        """Upstream objective: negative sum of pairwise dot products of globally L2-normalised features.
+        weight (M3): optional detached per-pixel weight [B,1,h,w] at feature resolution, mean 1 per image.
+        Every view's features are multiplied by sqrt(weight) before the normalisation, so each pixel's
+        term in the dot products is scaled by its weight. None (or all ones) is the upstream loss."""
         f0 = self._features(x_adv)
-        f_list = [_feature_post_norm(f0 * global_mask)]
+        sw = 1.0 if weight is None else weight.detach().sqrt()
+        f_list = [_feature_post_norm(f0 * sw * global_mask)]
         mask_list = [torch.flatten(torch.ones_like(f0), start_dim=1)]
         for f1, mask in self._view_features(x_adv, f0):
-            f_list.append(_feature_post_norm(f1 * global_mask))
+            f_list.append(_feature_post_norm(f1 * sw * global_mask))
             mask_list.append(torch.flatten(mask, start_dim=1) > 0.5)
         cost = 0
         for i, a in enumerate(f_list):
@@ -120,14 +138,17 @@ class EquiDefense:
                     cost = cost - torch.sum(a * b * mask_list[i] * mask_list[j], dim=[0, 1])
         return cost
 
-    def purify_delta(self, x, eps_map=None):
+    def purify_delta(self, x, eps_map=None, loss_weight=None):
         """Returns the defense perturbation delta (upstream return value).
         eps_map (P4, one_step only): per-pixel budget broadcastable to x (e.g. [B,1,H,W]), values in [0, eps_v].
-        None means the global scalar budget eps_v (unchanged P3 code path)."""
+        None means the global scalar budget eps_v (unchanged P3 code path).
+        loss_weight (M3): per-pixel loss weight, see loss(). Not supported by optimizer='original'."""
         if eps_map is not None and self.optimizer != "one_step":
             raise ValueError("eps_map is implemented for optimizer='one_step' only")
         if self.optimizer != "original":
-            return self._purify_new(x, eps_map)
+            return self._purify_new(x, eps_map, loss_weight)
+        if loss_weight is not None:
+            raise ValueError("loss_weight is not supported by optimizer='original'")
         global_mask = self._global_mask(x)
         eps = self.eps_v
         delta = torch.zeros_like(x)
@@ -155,7 +176,7 @@ class EquiDefense:
         return [eps / 4 + (2 * eps - eps / 4) * 0.5 * (1 + torch.cos(torch.tensor(torch.pi * i / (T - 1))).item())
                 for i in range(T)]
 
-    def _purify_new(self, x, eps_map=None):
+    def _purify_new(self, x, eps_map=None, loss_weight=None):
         """P3 optimisers (same objective as upstream, no gradient noise):
           one_step   : start at a random corner of the eps_v box (where upstream's 19 noisy steps end,
                        REPRODUCTION_REFERENCE.md N1), then one sign step of size 2*eps_v
@@ -166,7 +187,7 @@ class EquiDefense:
         Same random draws as the scalar path, so eps_map == eps_v everywhere gives the identical delta.
         """
         if eps_map is not None:
-            return self._one_step_map(x, eps_map)
+            return self._one_step_map(x, eps_map, loss_weight)
         eps = self.eps_v
         keep_all = torch.ones(1, 1, 1, 1, dtype=torch.bool, device=x.device)  # upstream's mask keeps everything
         if self.optimizer == "one_step":
@@ -177,7 +198,7 @@ class EquiDefense:
         m = torch.zeros_like(x)
         for eta in self._step_sizes():
             delta = delta.detach().requires_grad_(True)
-            cost = self.loss(delta + x, keep_all)
+            cost = self.loss(delta + x, keep_all, loss_weight)
             g = torch.autograd.grad(cost, delta)[0]
             if self.optimizer == "momentum":
                 m = 0.9 * m + g / (g.abs().sum(dim=(1, 2, 3), keepdim=True) + 1e-12)
@@ -186,13 +207,13 @@ class EquiDefense:
             delta = torch.max(torch.min(delta, 1 - x), 0 - x)
         return delta.detach()
 
-    def _one_step_map(self, x, eps_map):
+    def _one_step_map(self, x, eps_map, loss_weight=None):
         eps_map = eps_map.detach().expand_as(x)
         keep_all = torch.ones(1, 1, 1, 1, dtype=torch.bool, device=x.device)
         delta = eps_map * torch.sign(torch.empty_like(x).uniform_(-1, 1))
         delta = torch.max(torch.min(delta, 1 - x), 0 - x)
         delta = delta.detach().requires_grad_(True)
-        g = torch.autograd.grad(self.loss(delta + x, keep_all), delta)[0]
+        g = torch.autograd.grad(self.loss(delta + x, keep_all, loss_weight), delta)[0]
         delta = delta.detach() - (2 * eps_map) * torch.sign(g)
         delta = torch.max(torch.min(delta, eps_map), -eps_map)
         delta = torch.max(torch.min(delta, 1 - x), 0 - x)

@@ -21,6 +21,14 @@ Modes (everything else fixed, so each is a controlled comparison):
   gate+perpixel : skip if s < tau, else perpixel                               <- ours, clean model
   gate+perimage : skip if s < tau, else perimage                               (plan's P4 fallback, added
                   2026-10-27 after the pre-registered placement test failed)
+
+Mid-review options (IMPLEMENTATION_PLAN.md M1-M3), all default off:
+  gate_signal : signal for the gate score s only (default = signal). M2b uses "neg_entropy"
+                (-entropy, so confident images score high and get defended), with the budget still from "equi".
+  loss_weight : M3 per-pixel weight in the defense loss, computed from the defense input and detached,
+                normalised to mean 1 per image: "equi" (smoothed consistency map), "conf" (max softmax),
+                "inv_conf" (1 - max softmax). None = upstream loss.
+  view_set    : M1 defense views, see defense.VIEW_SETS.
 """
 import json
 import os
@@ -32,7 +40,8 @@ from . import RESULTS_DIR
 from .defense import EquiDefense
 
 MODES = ("global", "perpixel", "perimage", "shuffled", "gate", "gate+perpixel", "gate+perimage")
-SIGNALS = ("equi", "entropy")
+SIGNALS = ("equi", "entropy", "neg_entropy")
+LOSS_WEIGHTS = (None, "equi", "conf", "inv_conf")
 CALIB_DIR = os.path.join(RESULTS_DIR, "p4")
 
 
@@ -44,11 +53,26 @@ def signal_map(defense: EquiDefense, x, signal):
     """[B, h, w] signal at feature resolution, no grad."""
     if signal == "equi":
         return defense.consistency_map(x)
-    if signal == "entropy":
+    if signal in ("entropy", "neg_entropy"):
         with torch.no_grad():
             logp = F.log_softmax(defense._features(x), 1)
-            return -(logp.exp() * logp).sum(1)
+            h = -(logp.exp() * logp).sum(1)
+            return h if signal == "entropy" else -h
     raise ValueError(signal)
+
+
+@torch.no_grad()
+def loss_weight_map(defense: EquiDefense, x, kind, smooth=9):
+    """M3: detached per-pixel loss weight [B,1,h,w] at feature resolution, mean 1 per image."""
+    if kind == "equi":
+        w = smooth_map(defense.consistency_map(x), smooth)
+    elif kind in ("conf", "inv_conf"):
+        conf = F.softmax(defense._features(x), 1).max(1)[0]
+        w = conf if kind == "conf" else 1.0 - conf
+    else:
+        raise ValueError(kind)
+    w = w.unsqueeze(1)
+    return w / w.mean(dim=(1, 2, 3), keepdim=True).clamp_min(1e-8)
 
 
 def smooth_map(e, k):
@@ -59,13 +83,20 @@ def smooth_map(e, k):
 
 class AdaptiveDefense:
     def __init__(self, model, normalize, eps_v, num_views, device="cuda", model_tag=None,
-                 mode="perpixel", signal="equi", beta=0.2, smooth=9, calib=None):
+                 mode="perpixel", signal="equi", beta=0.2, smooth=9, calib=None,
+                 gate_signal=None, loss_weight=None, view_set="full"):
         if mode not in MODES:
             raise ValueError(f"mode {mode!r} not in {MODES}")
-        if signal not in SIGNALS:
-            raise ValueError(f"signal {signal!r} not in {SIGNALS}")
-        self.inner = EquiDefense(model, normalize, eps_v, num_views, steps=1, optimizer="one_step", device=device)
-        self.eps_v, self.mode, self.signal = eps_v, mode, signal
+        gate_signal = gate_signal or signal
+        for sg in (signal, gate_signal):
+            if sg not in SIGNALS:
+                raise ValueError(f"signal {sg!r} not in {SIGNALS}")
+        if loss_weight not in LOSS_WEIGHTS:
+            raise ValueError(f"loss_weight {loss_weight!r} not in {LOSS_WEIGHTS}")
+        self.inner = EquiDefense(model, normalize, eps_v, num_views, steps=1, optimizer="one_step", device=device,
+                                 view_set=view_set)
+        self.eps_v, self.mode, self.signal, self.gate_signal = eps_v, mode, signal, gate_signal
+        self.loss_weight = loss_weight
         self.beta, self.smooth = float(beta), int(smooth)
         if calib is None:
             if model_tag is None:
@@ -76,14 +107,16 @@ class AdaptiveDefense:
         self.a, self.b = float(cut["a"]), float(cut["b"])
         if not self.b > self.a:
             raise ValueError(f"calibration has b <= a ({self.b} <= {self.a})")
-        self.tau = float(calib["signals"][signal]["tau"])
-        self.calib_info = {"a": self.a, "b": self.b, "tau": self.tau, "calib_git": calib.get("git")}
+        self.tau = float(calib["signals"][gate_signal]["tau"])
+        self.calib_info = {"a": self.a, "b": self.b, "tau": self.tau, "gate_signal": gate_signal,
+                           "calib_git": calib.get("git")}
         self._stats = []
 
     def budget(self, x):
         """Returns (eps_map [B,1,H,W] for the non-gate modes, gate score s [B])."""
         e = signal_map(self.inner, x, self.signal)
-        s = e.flatten(1).mean(1)
+        eg = e if self.gate_signal == self.signal else signal_map(self.inner, x, self.gate_signal)
+        s = eg.flatten(1).mean(1)
         r = ((smooth_map(e, self.smooth) - self.a) / (self.b - self.a)).clamp(self.beta, 1.0)
         r = F.interpolate(r.unsqueeze(1), size=x.shape[-2:], mode="bilinear", align_corners=False)
         r = r.clamp(self.beta, 1.0)   # bilinear interpolation stays in range; clamp guards rounding only
@@ -104,7 +137,8 @@ class AdaptiveDefense:
         out = x.clone()
         if run.any():
             xi = x[run]
-            out[run] = torch.clamp(xi + self.inner.purify_delta(xi, eps_map[run]), 0.0, 1.0)
+            w = loss_weight_map(self.inner, xi, self.loss_weight, self.smooth) if self.loss_weight else None
+            out[run] = torch.clamp(xi + self.inner.purify_delta(xi, eps_map[run], w), 0.0, 1.0)
         for i in range(B):
             self._stats.append({"score": float(s[i]), "defended": bool(run[i]),
                                 "mean_eps_frac": float(eps_map[i].mean() / self.eps_v) if run[i] else 0.0})
