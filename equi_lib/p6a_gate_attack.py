@@ -66,8 +66,11 @@ def per_image_ce(logp, y):
     return ce.flatten(1).sum(1) / valid.flatten(1).sum(1).clamp_min(1)
 
 
-def gate_aware_attack(model, normalize, dfn: AdaptiveDefense, x, y, lam, steps, eps, step):
-    target = dfn.tau - 0.1 * abs(dfn.tau)
+def gate_aware_attack(model, normalize, dfn, x, y, lam, steps, eps, step):
+    """dfn: an AdaptiveDefense, or any defense callable (e.g. defenses.OriginalDefense) when lam == 0."""
+    if lam > 0 and not hasattr(dfn, "tau"):
+        raise ValueError("lam > 0 needs a gated AdaptiveDefense")
+    target = dfn.tau - 0.1 * abs(dfn.tau) if lam > 0 else None
     x = x.detach()
     delta = torch.empty_like(x).uniform_(-eps, eps)
     delta = torch.clamp(delta, -x, 1.0 - x)
@@ -76,8 +79,9 @@ def gate_aware_attack(model, normalize, dfn: AdaptiveDefense, x, y, lam, steps, 
 
     def forward(delta):
         xa = x + delta
-        out = dfn(xa.detach()).detach()   # the defense takes its own gradient step, so no no_grad here
-        dfn.pop_stats()
+        out = dfn(xa.detach(), y).detach()   # the defense takes its own gradient step, so no no_grad here
+        if hasattr(dfn, "pop_stats"):
+            dfn.pop_stats()
         xd = xa + (out - xa).detach()
         ce = per_image_ce(align_output(model(normalize(xd))[0], y.shape[-2:]), y)
         return xa, ce
@@ -114,6 +118,9 @@ def main():
     ap.add_argument("--eps-v", type=float, default=None, help="defense budget in 1/255 (default: preset)")
     ap.add_argument("--def-opts", default='{"mode": "gate+perimage"}')
     ap.add_argument("--batch-size", type=int, default=2)
+    ap.add_argument("--target", default="adaptive", choices=["adaptive", "original"],
+                    help="defense in the attack loop: the adaptive pipeline (--def-opts) or the upstream "
+                         "20-step defense (lam must be 0; 'pipeline' then means the original defense)")
     ap.add_argument("--tag", required=True)
     args = ap.parse_args()
 
@@ -124,13 +131,21 @@ def main():
     model = load_model(os.path.join(ROOT_DIR, preset["ckpt"]), device)
     norm = Normalizer(device)
     opts = json.loads(args.def_opts)
-    dfn = AdaptiveDefense(model, norm, preset["eps_v"], preset["num_views"], device=device,
-                          model_tag=args.model, **opts)
+    if args.target == "original":
+        from .defenses import OriginalDefense
+        if any(l > 0 for l in args.lams):
+            ap.error("--target original needs --lams 0")
+        dfn = OriginalDefense(model, norm, preset["eps_v"], preset["num_views"], device=device)
+        opts = {"target": "original"}
+    else:
+        dfn = AdaptiveDefense(model, norm, preset["eps_v"], preset["num_views"], device=device,
+                              model_tag=args.model, **opts)
     always_on = AdaptiveDefense(model, norm, preset["eps_v"], preset["num_views"], device=device,
-                                model_tag=args.model, mode="global")
+                                model_tag=args.model, mode="global", view_set=opts.get("view_set", "full"))
     indices = split_indices(args.split)[:args.limit]
+    tau = getattr(dfn, "tau", float("nan"))
     print(f"== P6a {args.tag} | {args.model} | {args.split} ({len(indices)} images) | seed {args.seed} | "
-          f"opts {opts} | tau {dfn.tau:.4f}", flush=True)
+          f"opts {opts} | tau {tau:.4f} | steps {args.steps}", flush=True)
 
     results = {}
     for lam in args.lams:
@@ -142,8 +157,9 @@ def main():
             x, y = load_batch(idx, device)
             d = gate_aware_attack(model, norm, dfn, x, y, lam, args.steps, ATTACK["eps"], ATTACK["step"])
             xa = torch.clamp(x + d, 0.0, 1.0)
-            x_pipe = dfn(xa).detach()          # defenses take a gradient step: call outside no_grad
-            stats += dfn.pop_stats()
+            x_pipe = dfn(xa, y).detach()       # defenses take a gradient step: call outside no_grad
+            stats += dfn.pop_stats() if hasattr(dfn, "pop_stats") else \
+                [{"defended": True, "mean_eps_frac": 1.0, "score": float("nan")}] * x.size(0)
             x_on = always_on(xa).detach()
             always_on.pop_stats()
             with torch.no_grad():
@@ -167,7 +183,7 @@ def main():
     os.makedirs(OUT_DIR, exist_ok=True)
     suffix = f"_n{args.limit}" if args.limit else ""
     out = os.path.join(OUT_DIR, f"p6a_{args.tag}_{args.split}{suffix}_s{args.seed}.json")
-    config = dict(vars(args), preset=preset, tau=dfn.tau, attack=ATTACK, git=git_hash())
+    config = dict(vars(args), preset=preset, tau=tau, attack=ATTACK, git=git_hash())
     with open(out, "w") as f:
         json.dump({"config": config, "results": results}, f, indent=1)
     print(f"  saved {os.path.relpath(out, ROOT_DIR)}")
