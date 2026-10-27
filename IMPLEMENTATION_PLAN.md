@@ -440,6 +440,33 @@ P2 already shows that penultimate-layer and logit-cosine measures separate attac
 
 **Done when:** the table is filled and committed. The headline is a clean-model row: clean+def close to the undefended model, at PGD+def within 1.5 of the original defense.
 
+**Outcome (2026-10-28; test100, 3 seeds, mean ± std; `results/improvements/p4c_*_test100_s{0,1,2}.json`; up1.5 views unless marked; non-adaptive PGD-50 only, see P6a for adaptive attacks):**
+
+| Model | Variant | Clean+def | PGD+def | s/img | gate defends (clean / PGD) |
+|:--|:--|:--:|:--:|:--:|:--:|
+| clean | No defense | 58.05 | 1.31 ± 0.05 | 0 | — |
+| clean | Original defense (20 steps, ε_v 6) | 34.16 ± 0.87 | 27.34 ± 0.87 | 7.2 | — |
+| clean | `one_step` global ε_v 6 | 33.51 ± 0.42 | 26.83 ± 0.54 | 0.25 | — |
+| clean | gate only | 55.17 ± 0.17 | 26.13 ± 0.51 | 0.27 | 7% / 100% |
+| clean | perimage only | 54.87 ± 0.10 | 26.23 ± 0.22 | 0.27 | — |
+| clean | **ours: equi gate + per-image** | **57.45 ± 0.09** | **25.77 ± 0.49** | 0.25 | 7% / 100% |
+| clean | entropy gate + per-image (M2b) | 58.04 ± 0.00 | 23.95 ± 1.16 | 0.28 | 2% / 89% |
+| clean | ours, full views (M1 off) | 57.43 ± 0.06 | 26.39 ± 0.46 | 0.38 | 7% / 100% |
+| adv | No defense | 51.07 | 24.84 ± 0.02 | 0 | — |
+| adv | Original defense (20 steps, ε_v 10) | 43.47 ± 0.30 | 27.51 ± 0.71 | 8.3 | — |
+| adv | `one_step` global ε_v 10 | 45.25 ± 0.81 | 28.57 ± 0.38 | 0.35 | — |
+| adv | **ours: `one_step` global ε_v 4 (retuned)** | **50.20 ± 0.09** | **26.73 ± 0.07** | 0.31 | — |
+| adv | ours, full views (M1 off) | 49.87 ± 0.11 | 26.42 ± 0.03 | 0.46 | — |
+| adv | perpixel ε_v 4 | 51.29 ± 0.06 | 25.87 ± 0.07 | 0.35 | — |
+
+Paired differences (same seeds):
+- **Clean model, ours vs original: clean+def +23.29, PGD+def −1.57.** Clean accuracy recovers to 0.6 below the undefended model, at 29× less time. PGD+def misses the "within 1.5" headline criterion by 0.07, so it is reported as "−1.6 PGD+def", not as "equal".
+- **Adv model, ours vs original: +6.73 / −0.78** (PGD+def tied). The gain comes from the retuned ε_v, not from adaptivity: the adv gate failed P2.
+- **M2b on test100:** ours vs entropy gate is −0.58 / **+1.83**. The entropy gate misses 11% of PGD images, so on test100 the equivariance gate wins on PGD+def by more than 1.5. Together with P6a (worst case 2.95 vs 0.95), the "equivariance-guided" wording stands.
+- **Ours vs gate-only / perimage-only:** +2.29 / +2.58 clean+def, −0.36 / −0.46 PGD+def. Combining the two is better than either alone on clean images.
+- **M1 (up1.5 vs full views):** clean model +0.03 / −0.61, adv +0.33 / +0.31, at 0.25 vs 0.38 s/img (clean) and 0.31 vs 0.46 (adv). Confirmed: same accuracy, ~1.5× faster.
+- **Adv perpixel vs ours:** +1.09 / −0.86, below 1.5. It is consistent with P4: no per-pixel effect.
+
 ---
 
 ## P5. Prediction averaging over views (Days 13–14, optional)
