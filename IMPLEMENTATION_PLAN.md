@@ -433,6 +433,11 @@ P2 already shows that penultimate-layer and logit-cosine measures separate attac
 | clean | ours + budget floor (only if P6a needs it) | | | |
 | both | ours + M1 view set / + M3 weighting (only if they passed) | | | |
 
+**Locked config (2026-10-28, before any test100 run):**
+- **Clean model (ours):** `one_step`, ε_v 6/255, view set `up1.5` (M1), uniform loss (M3 failed), equivariance gate `down|l2_softmax` (M2b + P6a), per-image budget, **no floor** (P6a: the floor fails). Def-opts `{"mode": "gate+perimage", "view_set": "up1.5"}`.
+- **Adv model (ours):** `one_step`, global (no gate: the adv gate failed P2), view set `up1.5`, **ε_v 4/255**. Tune100, up1.5, 3 seeds (`results/improvements/p4c_adv_up15_g{2,4}_tune100_*`, `m_adv_up15_*`): 2/255 47.82 / 27.15, 4/255 47.03 / 28.14, 6/255 45.53 / 28.54 (clean+def / PGD+def). Choice procedure: (1) all three tie on PGD+def (within 1.5 of the best); (2) best clean+def is 2/255, and 6/255 falls out (−2.29), leaving 2 and 4 tied; (3) between those, the higher PGD+def → 4/255.
+- Every test100 row below uses the up1.5 view set unless marked "full".
+
 **Done when:** the table is filled and committed. The headline is a clean-model row: clean+def close to the undefended model, at PGD+def within 1.5 of the original defense.
 
 ---
