@@ -1,0 +1,40 @@
+{
+ "model": "adv",
+ "num_views": 9,
+ "loss_minimum": -36.0,
+ "num_images": 10,
+ "split": "tune100",
+ "per_image_mean": {
+  "clean": {
+   "undefended": -23.41565818786621,
+   "original": -28.68469657897949,
+   "one_step": -28.582770919799806,
+   "sign_decay3": -29.200943756103516,
+   "momentum3": -29.464349365234376
+  },
+  "pgd": {
+   "undefended": -23.78849563598633,
+   "original": -28.957895278930664,
+   "one_step": -28.88901252746582,
+   "sign_decay3": -29.62989959716797,
+   "momentum3": -29.804336166381837
+  }
+ },
+ "per_image_std": {
+  "clean": {
+   "undefended": 0.674950318750373,
+   "original": 0.4534160824285245,
+   "one_step": 0.5072693973408423,
+   "sign_decay3": 0.4546623770043017,
+   "momentum3": 0.3739911100595915
+  },
+  "pgd": {
+   "undefended": 0.787001347382685,
+   "original": 0.551929774772208,
+   "one_step": 0.5269482374213156,
+   "sign_decay3": 0.47999521650493343,
+   "momentum3": 0.41394173836402764
+  }
+ },
+ "git": "258a559-dirty"
+}

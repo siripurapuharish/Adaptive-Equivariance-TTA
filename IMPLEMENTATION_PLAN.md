@@ -22,9 +22,9 @@ Background facts, configs and baselines are in `REPRODUCTION_REFERENCE.md`. The 
 
 **Novel contribution:** the first test-time defense for semantic segmentation that uses dense equivariance error to adapt the defense budget per pixel.
 
-**Supporting parts (cited, adapted):**
-- a faster optimiser for the defense (momentum and step decay, from MI-FGSM / APGD)
-- prediction averaging over the equivariance views (standard segmentation test-time augmentation)
+**Supporting parts:**
+- a ~20× faster defense (`one_step`, P3). This comes from our own measurement that the published 20-step loop is effectively one sign step (`REPRODUCTION_REFERENCE.md` N1), not from a cited optimiser. Momentum and step decay (MI-FGSM / APGD) were tested in P3 and did not help (finding N7), so present them as a tested-and-rejected ablation, not as an integrated technique.
+- prediction averaging over the equivariance views (standard segmentation test-time augmentation; cited)
 
 **Evaluation:** PGD, SegPGD, BPDA (+EOT), a full-gradient attack, and a gate-aware adaptive attack. Every number is mean ± std over 3 seeds.
 
@@ -152,6 +152,12 @@ Add options to `EquiDefense`:
 
 **Done when:** one variant matches the original's robust mIoU (within noise) at ≥ 3× speed, or beats it. That variant becomes the base for P4. If none matches, keep `original` and continue; the speed claim is then dropped.
 
+**Outcome (done 2026-10-27):**
+- tune100, seed 0, PGD+def (clean / adv model): original 25.45 / 27.86, one_step 25.96 / 27.74, momentum3 22.58 / 28.03, momentum5 22.22 / 27.12, sign_decay3 20.98 / 28.22, sign_decay5 21.36 / 27.44.
+- **Deviation from the protocol above:** the strict rule (top 2 by robust mIoU averaged over both models) picks one_step (26.85) and momentum3 (25.31). We confirmed one_step and **sign_decay3** (24.60) instead, because sign_decay3 was the extreme case (worst on the clean model, best on the adv model), so it tests whether the "more optimisation hurts the clean model" effect is real. momentum3 was **not** run on test100. Its tune100 result points the same way (−2.9 on the clean model), but it is a one-seed number.
+- test100, 3 seeds: one_step matches the original (see the speed table below) and is the P4 base. sign_decay3 confirms N7 (clean model PGD+def −5.3, clean+def +6.0).
+- Saved evidence that the multi-step variants really reach a lower equivariance loss: `results/improvements/p3/loss_check_*.json` (`python -m equi_lib.p3_loss_check`).
+
 ### P3b. Speed optimisation (same days; do the profiling first)
 
 **Step 1: profile** on 10 images, both models. Time each part per image:
@@ -178,17 +184,23 @@ This confirms where the time goes before changing anything.
   - Try a scale of 1.5× (2.25× pixels), or replace one of the two 2× views with a 1.5× view.
   - Risk: the paper's Table 6 says resize views help robustness the most.
 
-**Output:** a speed table, ready to drop into the slides.
+**Output:** a speed table, ready to drop into the slides. test100, mean ± std over seeds 0–2, batch 2, RTX 2000 Ada. Each cell is clean model / adv model. Defense time only (attack excluded).
 
 | Config | sec/img (attacked) | sec/img (clean) | Clean+def mIoU | PGD+def mIoU |
 |:--|:--:|:--:|:--:|:--:|
-| Original (20 steps) | | | | |
-| + 3 steps | | | | |
-| + AMP + batch | | | | |
-| + cheaper views (if kept) | | | | |
+| Original (20 steps) | 7.17 / 8.32 | 7.20* / 8.33 | 34.16 ± 0.87 / 43.47 ± 0.30 | 27.34 ± 0.87 / 27.51 ± 0.71 |
+| `one_step` (P3) | 0.35 / 0.41 | 0.35 / 0.43 | 34.86 ± 0.80 / 44.03 ± 0.42 | 26.84 ± 0.62 / 27.51 ± 0.56 |
+| + AMP + batch | not run | | | |
+| + cheaper views | not run | | | |
 | + gate (P4) | | | | |
 
-**Combined estimate:** ~8 s → ~0.5–1 s per attacked image (~8–15×), and less for gated clean images. These are estimates to confirm by measurement.
+\* Seeds 1–2 only; seed 0's clean+def pass ran on a busy GPU (44 s/img).
+
+**Status of P3b (2026-10-27):**
+- Profiling: done (`results/improvements/p3/profile_*.json`). The two 2× views take 76% (clean model) / 63% (adv) of the view cost.
+- Batch 4: rejected. The adv model needs 15.3 GB and slows to 26.6 s/img, because Windows spills GPU memory into system RAM instead of raising out-of-memory.
+- AMP and cheaper views: not run. `one_step` already gives ~20× (target ≥ 3×), and half precision could flip gradient signs, which is all the defense uses. Revisit only if P6 attacks are too slow.
+- Reuse gate views: moves to P4. cuDNN autotune: not applied.
 
 **BPDA and adaptive attacks get the same speed-up automatically,** since they run the defense inside each attack step. Do **not** reduce attack strength (BPDA steps, EOT samples) to save time, because that would make the defense look stronger than it is.
 
@@ -196,21 +208,32 @@ This confirms where the time goes before changing anything.
 
 ## P4. Main idea: gate + per-pixel budget (Days 8–12)
 
+**Updated 2026-10-27 after P2 and P3:**
+- The error signal is the P2 winner **`down|l2_softmax`**: the L2 distance between the softmax of the base output and of a 0.5×-downscaled view mapped back to the base grid. It is *not* the P1 `error_map()` (logit cosine over the defense views), which fails on the adv model (pixel AUROC 0.47).
+- The defense objective stays upstream's. The base optimiser is `one_step`.
+- Gate per model, as decided in P2: the clean model gets gate + per-pixel (image AUROC 1.00). The adv model gets per-pixel only, or at most a soft per-image scale; never a hard gate (test100 image AUROC 0.872 < 0.90).
+
+**Step 0: controls first (day 8, ~30 min of GPU time with `one_step`):**
+- **Global ε_v sweep** with `one_step` on `tune100`, both models: ε_v ∈ {0, 2, 4, 6, 8, 10}/255 (the adv model is at 10/255), PGD+def and clean+def. This gives the trade-off curve a per-pixel budget must beat; just moving along that curve doesn't count.
+- **Matched-budget control (in the ablation):** a global ε_v equal to the *mean* of our ε(p) map on the same inputs. If ours doesn't beat this, the gain comes from a smaller average budget, not from placing it per pixel.
+- Move `down|l2_softmax` from `equi_lib/p2_extended.py` into `equi_lib/defense.py` as a reusable `consistency_map(x)`, and check it reproduces the P2 tune100 AUROCs (0.987 / 0.921).
+- Compute the cut-offs a, b on `tune100` (clean and PGD-50 pixels, seed 0) and save them. The P2 JSONs store only AUROCs, not percentiles.
+
 **Algorithm (for each input x):**
-1. `e = error_map(x)`, computed once from the input, **detached** (stop-gradient), so the optimiser can't game it.
-2. **Gate:** s = mean(e). If s < τ, return x unchanged.
+1. `e = consistency_map(x)` (`down|l2_softmax`), computed once from the input, **detached** (stop-gradient), so the optimiser can't game it. It uses one extra no-grad forward of a 0.5× image (cheap).
+2. **Gate (clean model only):** s = mean(e). If s < τ, return x unchanged.
 3. **Budget map:** smooth e with a 9×9 average pool at feature resolution (avoids speckle), then
 
    ε(p) = ε_v · clip( (e_p − a) / (b − a), β, 1 )
 
-   - a, b: the 50th percentile of clean-pixel e and the 90th percentile of attacked-pixel e (from `tune100`)
+   - a, b: the 50th percentile of clean-pixel e and the 90th percentile of attacked-pixel e (computed in step 0 on `tune100`)
    - β: a floor (default 0.2) so no attacked pixel gets zero budget
-4. Run the P3 optimiser with element-wise clamp `δ = clamp(δ, −ε_map, ε_map)` and step size scaled by ε(p)/ε_v.
+4. Run `one_step` with the per-pixel budget: start at a random corner ±ε(p), take one sign step, and clamp element-wise to `[−ε(p), ε(p)]`. This gives δ = −ε(p)·sign(g).
 
 **Hyperparameters, chosen on `tune100` only:**
-- τ: the value at which 95% of clean images pass (skip the defense)
+- τ (clean model): the value at which 95% of clean images pass (skip the defense)
 - β ∈ {0, 0.2, 0.4}
-- a / b percentiles from the P2 distributions
+- a / b percentiles from step 0
 
 **Ablation table (`test100`, 3 seeds, both models):**
 
@@ -219,7 +242,8 @@ This confirms where the time goes before changing anything.
 | No defense | | | |
 | Original defense (P2 baseline) | | | |
 | P3 optimiser, global ε_v | | | |
-| + gate only | | | |
+| Global ε_v = mean of our ε(p) (matched-budget control) | | | |
+| + gate only (clean model) | | | |
 | + per-pixel only | | | |
 | + gate + per-pixel (**ours**) | | | |
 
@@ -316,4 +340,5 @@ Attack the **final system** (P4 + P5) and the **original defense**, on `test100`
 | Faster optimiser loses robustness | P3 table | Keep `original`; drop the speed claim |
 | Gate-aware attack breaks the gate | P6 | Report it; show per-pixel-only results; discuss as a limitation |
 | Schedule slips | Behind by > 2 days at end of P4 (day 12) | Skip P5, run P6 on 50 images only |
-| Full-gradient attack doesn't fit in 16 GB | OOM, or the P3 gradient check shows cosine ≈ 1 | Smoothed 2–5 step surrogate with checkpointing and AMP, on 20–50 images |
+| Full-gradient attack doesn't fit in 16 GB | OOM, or the P3 gradient check shows cosine ≈ 1 (it does: 1.000000) | Smoothed 2–5 step surrogate with checkpointing and AMP, on 20–50 images |
+| Windows spills GPU memory into system RAM | No out-of-memory error; the run just becomes several times slower (P3: the unrolled check peaked at 21.9 GB on the 16 GB card; adv batch 4 ran at 26.6 s/img) | For P6, log `torch.cuda.max_memory_allocated()` and sec/img per run; treat a peak > 15 GB as a failed configuration |

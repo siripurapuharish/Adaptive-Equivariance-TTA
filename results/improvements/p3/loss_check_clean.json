@@ -1,0 +1,40 @@
+{
+ "model": "clean",
+ "num_views": 7,
+ "loss_minimum": -21.0,
+ "num_images": 10,
+ "split": "tune100",
+ "per_image_mean": {
+  "clean": {
+   "undefended": -14.000361251831055,
+   "original": -14.627520751953124,
+   "one_step": -13.918301010131836,
+   "sign_decay3": -15.12116355895996,
+   "momentum3": -15.887176132202148
+  },
+  "pgd": {
+   "undefended": -9.407411003112793,
+   "original": -14.256572151184082,
+   "one_step": -13.662490272521973,
+   "sign_decay3": -15.677447509765624,
+   "momentum3": -16.000841903686524
+  }
+ },
+ "per_image_std": {
+  "clean": {
+   "undefended": 0.5083973975400701,
+   "original": 0.557516826254622,
+   "one_step": 0.8625071266999673,
+   "sign_decay3": 0.6481032958988393,
+   "momentum3": 0.6428669209526648
+  },
+  "pgd": {
+   "undefended": 0.5051296075426047,
+   "original": 0.7682040745855843,
+   "one_step": 0.7381586876317724,
+   "sign_decay3": 0.6100174281662377,
+   "momentum3": 0.719941777802033
+  }
+ },
+ "git": "258a559-dirty"
+}

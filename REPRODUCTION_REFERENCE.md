@@ -133,7 +133,7 @@ Both differences are inside the seed spread (std 0.87 / 0.30). This is **one see
 
 - **Confirmed by ablation (P3, test100, 3 seeds):** a single sign step from a random corner (`one_step`) gives the same defended mIoU as the 20-step original: PGD+def 26.84 ± 0.62 vs 27.34 ± 0.87 (clean model), 27.51 ± 0.56 vs 27.51 ± 0.71 (adv), at ~20× lower cost (0.35 vs 7.16 s/img; 0.41 vs 8.32).
 
-**N7. Optimising the defense's objective harder hurts robustness on the clean model. CONFIRMED (P3, test100, 3 seeds).** `sign_decay3` (3 noise-free sign steps, step 2ε_v → ε_v/4) reaches a much lower equivariance loss than one step, but:
+**N7. Optimising the defense's objective harder hurts robustness on the clean model. CONFIRMED (P3, test100, 3 seeds).** `sign_decay3` (3 noise-free sign steps, step 2ε_v → ε_v/4) reaches a somewhat lower equivariance loss than one step (measured on 10 tune100 images, PGD inputs, same random views for every method; `results/improvements/p3/loss_check_*.json`: clean model −15.7 vs −13.7, minimum −21; adv model −29.6 vs −28.9, minimum −36; original 20-step −14.3 / −29.0), but:
 - clean model: PGD+def 22.04 ± 0.33 vs 27.34 ± 0.87 (−5.29; every seed −4.5 to −6.4), while clean+def rises to 40.19 ± 1.28 vs 34.16 ± 0.87 (+6.03; every seed +4.6 to +7.6);
 - adv model: no significant change (PGD+def −0.48, clean+def +0.97).
 So on the clean model, a lower equivariance loss trades robustness for clean accuracy rather than improving both. Tune100 runs with momentum and 5 steps showed the same direction (PGD+def 21.4–22.6 vs 25.45).

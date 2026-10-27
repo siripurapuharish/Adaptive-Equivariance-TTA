@@ -1,0 +1,23 @@
+model name drn_d_22
+  [2/10]
+  [4/10]
+  [6/10]
+  [8/10]
+  [10/10]
+
+== Equivariance loss per image, clean (7 views, minimum -21)
+  clean undefended -14.00 | original -14.63 | one_step -13.92 | sign_decay3 -15.12 | momentum3 -15.89
+  pgd   undefended -9.41 | original -14.26 | one_step -13.66 | sign_decay3 -15.68 | momentum3 -16.00
+  saved results\improvements\p3\loss_check_clean.json
+model name drn_d_22
+  [2/10]
+  [4/10]
+  [6/10]
+  [8/10]
+  [10/10]
+
+== Equivariance loss per image, adv (9 views, minimum -36)
+  clean undefended -23.42 | original -28.68 | one_step -28.58 | sign_decay3 -29.20 | momentum3 -29.46
+  pgd   undefended -23.79 | original -28.96 | one_step -28.89 | sign_decay3 -29.63 | momentum3 -29.80
+  saved results\improvements\p3\loss_check_adv.json
+exit 0
