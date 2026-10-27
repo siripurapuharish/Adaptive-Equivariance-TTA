@@ -84,7 +84,7 @@ def smooth_map(e, k):
 class AdaptiveDefense:
     def __init__(self, model, normalize, eps_v, num_views, device="cuda", model_tag=None,
                  mode="perpixel", signal="equi", beta=0.2, smooth=9, calib=None,
-                 gate_signal=None, loss_weight=None, view_set="full"):
+                 gate_signal=None, loss_weight=None, view_set="full", img_floor=0.0):
         if mode not in MODES:
             raise ValueError(f"mode {mode!r} not in {MODES}")
         gate_signal = gate_signal or signal
@@ -98,6 +98,10 @@ class AdaptiveDefense:
         self.eps_v, self.mode, self.signal, self.gate_signal = eps_v, mode, signal, gate_signal
         self.loss_weight = loss_weight
         self.beta, self.smooth = float(beta), int(smooth)
+        # P6a budget floor: every image gets at least img_floor * eps_v, even when the gate is off
+        self.img_floor = float(img_floor)
+        if not 0.0 <= self.img_floor <= 1.0:
+            raise ValueError(f"img_floor {img_floor} not in [0, 1]")
         if calib is None:
             if model_tag is None:
                 raise ValueError("need model_tag or calib")
@@ -131,16 +135,22 @@ class AdaptiveDefense:
             eps_map = eps_map.mean(dim=(1, 2, 3), keepdim=True).expand_as(eps_map).contiguous()
         elif self.mode == "shuffled":
             eps_map = torch.roll(eps_map, shifts=(x.size(2) // 2, x.size(3) // 2), dims=(2, 3))
-        run = torch.ones(B, dtype=torch.bool, device=x.device)
+        gate = torch.ones(B, dtype=torch.bool, device=x.device)
         if self.mode.startswith("gate"):
-            run = s >= self.tau
+            gate = s >= self.tau
+        run = gate
+        if self.img_floor > 0:
+            floor = self.img_floor * self.eps_v
+            eps_map = torch.where(gate.view(B, 1, 1, 1), eps_map.clamp_min(floor), torch.full_like(eps_map, floor))
+            run = torch.ones_like(gate)
         out = x.clone()
         if run.any():
             xi = x[run]
             w = loss_weight_map(self.inner, xi, self.loss_weight, self.smooth) if self.loss_weight else None
             out[run] = torch.clamp(xi + self.inner.purify_delta(xi, eps_map[run], w), 0.0, 1.0)
         for i in range(B):
-            self._stats.append({"score": float(s[i]), "defended": bool(run[i]),
+            # "defended" = the gate's decision (gate TPR); with a floor every image is still purified
+            self._stats.append({"score": float(s[i]), "defended": bool(gate[i]),
                                 "mean_eps_frac": float(eps_map[i].mean() / self.eps_v) if run[i] else 0.0})
         return out
 
