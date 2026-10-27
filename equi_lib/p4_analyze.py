@@ -96,7 +96,7 @@ def main():
               ", ".join(f"{p['eps']}: {p['c']:.2f}, {p['p']:.2f}" for p in pts))
         rep["global_curve"] = pts
 
-        for ours in [v for v in ("perpixel", "gate_perpixel", "perimage", "perpixel_entropy") if v in R]:
+        for ours in [v for v in ("perpixel", "gate_perpixel", "perimage", "gate_perimage", "gate", "perpixel_entropy") if v in R]:
             c, p = float(R[ours]["clean+def"].mean()), float(R[ours]["pgd+def"].mean())
             yp, xc = envelope(pts, c, "c", "p"), envelope(pts, p, "p", "c")
             gp = None if yp is None else p - yp

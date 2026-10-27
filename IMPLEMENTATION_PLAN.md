@@ -263,6 +263,31 @@ This confirms where the time goes before changing anything.
 
 **Fallback:** if per-pixel doesn't help, ship gate + per-image budget (decided in P2).
 
+**Outcome of the decision runs (2026-10-27; tune100, seeds 0-2, beta 0.2, 9x9 smoothing; `python -m equi_lib.p4_analyze`, `results/improvements/p4/decision_tune100.json`):**
+
+| Model | Variant | clean+def | PGD+def | mean eps frac (clean / PGD) |
+|:--|:--|:--:|:--:|:--:|
+| Adv | global 10/255 (preset) | 40.90 ± 0.18 | 27.80 ± 0.23 | 1 / 1 |
+| Adv | global 6/255 (best of sweep on PGD) | 45.49 ± 0.41 | 28.19 ± 0.22 | 1 / 1 |
+| Adv | perpixel | 47.53 ± 0.09 | 28.43 ± 0.21 | 0.22 / 0.31 |
+| Adv | perimage | 47.78 ± 0.10 | 27.68 ± 0.14 | 0.22 / 0.31 |
+| Adv | shuffled | 47.83 ± 0.13 | 27.14 ± 0.15 | 0.22 / 0.31 |
+| Adv | perpixel, entropy signal | 46.29 ± 0.23 | 28.14 ± 0.18 | 0.31 / 0.34 |
+| Clean | undefended | 52.14 | 1.15 | 0 / 0 |
+| Clean | global 6/255 (preset, best of sweep on PGD) | 32.04 ± 0.17 | 26.31 ± 0.37 | 1 / 1 |
+| Clean | perpixel | 49.41 ± 0.45 | 22.77 ± 0.35 | 0.22 / 0.78 |
+| Clean | perimage | 49.97 ± 0.33 | 26.05 ± 0.52 | 0.22 / 0.78 |
+| Clean | shuffled | 50.42 ± 0.11 | 19.06 ± 0.20 | 0.22 / 0.78 |
+| Clean | gate | 49.37 ± 0.20 | 26.33 ± 0.55 | 0.05 / 1.00 |
+| Clean | gate+perpixel | 51.90 ± 0.23 | 22.95 ± 0.21 | 0.01 / 0.78 |
+| Clean | gate+perimage (fallback, run after the verdict) | 51.97 ± 0.22 | 26.12 ± 0.41 | 0.01 / 0.78 |
+| Clean | perpixel, entropy signal | 34.75 ± 0.43 | 2.61 ± 0.09 | 0.57 / 0.28 |
+
+- **Placement test: FAILS on both models.** Adv: perpixel − perimage = −0.25 clean+def / +0.75 PGD+def; perpixel − shuffled = −0.30 / +1.29 (paired over seeds; consistent sign, std ≤ 0.10, but below the 1.5 threshold). Clean: perpixel loses 3.28 PGD+def to perimage (it beats shuffled by 3.71). **The per-pixel claim is dropped**, as pre-registered.
+- **Global-curve test.** Adv: nothing beats the curve by > 1.5 (perpixel +1.07, perimage +0.58). Clean: every image-adaptive variant beats it by a wide margin (perimage +23.1 PGD+def at equal clean+def; gate+perimage +24.8; gate +22.8). The gain comes from giving clean images a small budget and attacked images a large one, i.e. image-level adaptation.
+- **Branch taken:** clean model → the plan's fallback (gate + per-image budget): gate+perimage keeps clean+def within 0.2 of the undefended model at the same PGD+def as the best global setting. Adv model → negative result for adaptive budgets (discuss with the guide). Side finding: on the adv model the preset 10/255 is not the best budget for `one_step`; 6/255 gives +4.6 clean+def and +0.4 PGD+def on tune100.
+- **Caveats.** All numbers are against non-adaptive PGD-50. The gate and the per-image budget are driven by a signal the attacker can also lower, so the P6 gate-aware attack decides whether this survives. The gate is not novel (Mao et al. A.3.1 detect-then-defend). The result is tune100 only; test100 confirmation is pending.
+
 ---
 
 ## P5. Prediction averaging over views (Days 13–14)

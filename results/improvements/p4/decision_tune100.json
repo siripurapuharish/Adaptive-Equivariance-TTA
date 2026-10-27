@@ -274,6 +274,31 @@
      "6037924"
     ]
    },
+   "gate_perimage": {
+    "clean+def": [
+     51.71854712735228,
+     52.09992951993065,
+     52.08664291307265
+    ],
+    "pgd+def": [
+     25.705805891678313,
+     26.51803850124381,
+     26.128808868244118
+    ],
+    "stats": {
+     "clean+def": {
+      "defended_fraction": 0.05000000000000001,
+      "mean_eps_frac": 0.014638774693012238
+     },
+     "pgd+def": {
+      "defended_fraction": 1.0,
+      "mean_eps_frac": 0.7758744698762894
+     }
+    },
+    "git": [
+     "da6ceb8"
+    ]
+   },
    "gate_perpixel": {
     "clean+def": [
      51.64945491328502,
@@ -525,6 +550,16 @@
   "curve_perimage": {
    "pgd_gain": 23.067084481170664,
    "clean_gain": 17.315046106113577,
+   "beats": true
+  },
+  "curve_gate_perimage": {
+   "pgd_gain": 24.81918037962348,
+   "clean_gain": 19.46944371179932,
+   "beats": true
+  },
+  "curve_gate": {
+   "pgd_gain": 22.841192926021627,
+   "clean_gain": null,
    "beats": true
   },
   "curve_perpixel_entropy": {
