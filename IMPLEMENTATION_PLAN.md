@@ -3,30 +3,48 @@
 Created 2026-10-26. Deadline: about 2026-11-24. **Compressed to a 25-day schedule on 2026-10-26** (day 1 = 2026-10-26, day 25 = 2026-11-19, leaving 5 days of slack before the deadline).
 Background facts, configs and baselines are in `REPRODUCTION_REFERENCE.md`. The literature research behind the 25-day changes is in `reports/Equivariance defense improvement ideas.md`.
 
-### Schedule at a glance (25 days)
+### Schedule at a glance (re-planned 2026-10-27, after P4)
 
-| Phase | Days | Change from the 30-day plan |
-|:--|:--:|:--|
-| P0 Shared setup | 1–2 | Day 1 also profiles GPU memory and time (RTX 2000 Ada, 16 GB) |
-| P1 Defense module | 3 | none |
-| P2 Go/no-go | 4 | Pixel-level table over view types and error measures; entropy baseline |
-| P3 Faster optimiser | 5–7 | Adds a check that the unrolled gradient ≈ the BPDA gradient |
-| P4 Main idea | 8–12 | 6 → 5 days; adds the signal ablation and random-crop views |
-| P5 View averaging | 13–14 | 1 day earlier |
-| P6 Attack testing | 15–20 | Starts 1 day earlier; adds CosPGD, BPDA over intermediate steps, fixed-seed and transfer attacks, ε(p)-aware attack |
-| P7 Wrap-up | 21–25 | 9 → 5 days, 1 buffer day |
+P0–P4 finished on day 2 (2026-10-27), well ahead of the 25-day plan. The per-pixel placement claim failed its pre-registered test (P4 outcome below), so the remaining days were re-planned around what worked: **image-level adaptation driven by the equivariance signal**. The re-plan also folds in the four improvements proposed in the mid-review slides (`Harish_midreview.pdf`); see the section "Mid-review improvements (M1–M4)" after P4.
 
-**Cut order if we slip:** P5 view averaging first, then the reduced SEA attack, then extra attack variants. The core is the pixel-level test, per-pixel budget, optimiser, BPDA and the gate-aware attacks.
+| Day | Date | Phase | Work |
+|:--:|:--|:--|:--|
+| 1–2 | Oct 26–27 | P0–P4 | **Done** |
+| 3 | Oct 28 | M1, M3, M2b | Code the reduced view sets (M1), the weighted defense loss (M3) and the entropy gate baseline (M2b); smoke test. **Overnight:** all three on `tune100`, 3 seeds |
+| 4–5 | Oct 29–30 | P6a | **Gate-aware adaptive attack** on the clean model (`tune100`, 50 images). Day 4 morning: apply the pre-registered rules to M1 / M3 / M2b |
+| 6 | Oct 31 | P4c | Lock the final config (budget floor if P6a breaks the gate; M1 / M3 if they passed). Show the reframing to the guide. **Overnight:** `test100` confirmation, 3 seeds |
+| 7 | Nov 1 | P4c | Fill the final ablation table; retuned ε_v for the adv model |
+| 8–12 | Nov 2–6 | P6b | The remaining attacks on the final system and on the original defense |
+| 13–14 | Nov 7–8 | P5 | View averaging (optional) or buffer |
+| 15–16 | Nov 9–10 | P7 | `full500` runs (overnight) |
+| 17 | Nov 11 | P7 | Gradio demo |
+| 18–22 | Nov 12–16 | P7 | Thesis |
+| 23–25 | Nov 17–19 | P7 | Slides and buffer (deadline Nov 24) |
+
+**Cut order if we slip:** P5, then M3, then the extra attack variants (CosPGD, transfer, reduced SEA), then the smoothed full-gradient attack. **Never cut:** P6a (gate-aware attack), BPDA (+EOT), the `test100` 3-seed confirmation, or the negative results.
 
 ## Goal
 
-**Novel contribution:** the first test-time defense for semantic segmentation that uses dense equivariance error to adapt the defense budget per pixel.
+**Contribution (reframed 2026-10-27 after P4):** an **equivariance-guided adaptive test-time defense** for semantic segmentation. A cheap dense equivariance-consistency measure (`down|l2_softmax`, picked from 32 candidates in P2) decides **whether** to defend an image (gate) and **how strongly** (per-image budget). On the clean model it raises clean accuracy from 32 to 52 mIoU (the undefended level) at the same PGD robustness, at about 20× lower cost than the published defense (tune100; to be confirmed on test100 and under adaptive attack).
+
+The old claim ("first defense with a per-pixel budget") is **dropped**: its pre-registered placement test failed on both models. The claim is now about choosing and evaluating the signal and the per-image budget, not about the gate itself (Mao et al. A.3.1 suggest detect-then-defend but never build or evaluate it). The strongest support is the adaptive-attack evaluation (P6).
 
 **Supporting parts:**
 - a ~20× faster defense (`one_step`, P3). This comes from our own measurement that the published 20-step loop is effectively one sign step (`REPRODUCTION_REFERENCE.md` N1), not from a cited optimiser. Momentum and step decay (MI-FGSM / APGD) were tested in P3 and did not help (finding N7), so present them as a tested-and-rejected ablation, not as an integrated technique.
-- prediction averaging over the equivariance views (standard segmentation test-time augmentation; cited)
+- the mid-review improvements M1–M4, each with a result, including the negative ones (see the section after P4)
+- prediction averaging over the equivariance views (P5, optional; standard segmentation test-time augmentation; cited)
 
-**Evaluation:** PGD, SegPGD, BPDA (+EOT), a full-gradient attack, and a gate-aware adaptive attack. Every number is mean ± std over 3 seeds.
+**Findings for the thesis, positive and negative:**
+1. The 20-step defense collapses to one effective step (N1). One step matches it at ~20× speed (P3).
+2. More optimisation hurts the clean model (N7).
+3. The defense is weaker under BPDA than reported on the adv-trained model.
+4. The exact unrolled gradient equals BPDA (cosine 1.000).
+5. Image-level adaptation gives a large gain on the clean model. Per-pixel placement doesn't help on either model.
+6. Confidence is the wrong signal: attacked images are *more* confident.
+7. Deep features detect attacks worse than softmax outputs.
+8. The paper's ε_v = 2.5ε is not optimal with `one_step` on the adv model.
+
+**Evaluation:** PGD, SegPGD, BPDA (+EOT), a smoothed full-gradient attack, and a gate-aware adaptive attack. Every number is mean ± std over 3 seeds.
 
 **Success criteria (measured on `test100`, mean ± std over 3 seeds; baselines from `REPRODUCTION_REFERENCE.md` §4b):**
 
@@ -37,6 +55,9 @@ Background facts, configs and baselines are in `REPRODUCTION_REFERENCE.md`. The 
 | Adv-model, clean images + defense (T2 analog) | 43.47 ± 0.30 | higher |
 | Adv-model, PGD + defense (T4 analog) | 27.51 ± 0.71 | no drop beyond ~1.5 mIoU |
 | Defense time per image | ~7.1 s (clean) / ~8.3 s (adv), 20 steps | ≥ 3× faster (re-measure on an idle GPU before P3) |
+| **Worst case over the P6 attacks** (added 2026-10-27) | original defense's worst case, measured in P6 | no worse than it by more than ~1.5 mIoU, on both models |
+
+The last row decides the thesis claim. A defense that wins on plain PGD but loses to an attacker who knows about the gate is not an improvement.
 
 **Significance:** with 3 seeds, the standard error of a difference between two means is ~0.6 mIoU, so changes smaller than **~1.5 mIoU (approximate)** are treated as noise. The 3-seed std estimates are themselves rough; use 5 seeds for the final headline numbers if time allows.
 
@@ -206,7 +227,9 @@ This confirms where the time goes before changing anything.
 
 ---
 
-## P4. Main idea: gate + per-pixel budget (Days 8–12)
+## P4. Main idea: gate + per-pixel budget (done on day 2)
+
+*Kept as the record of what was planned and pre-registered. The outcome at the end of this section changed the plan: see "Mid-review improvements", P4c and P6a below.*
 
 **Updated 2026-10-27 after P2 and P3:**
 - The error signal is the P2 winner **`down|l2_softmax`**: the L2 distance between the softmax of the base output and of a 0.5×-downscaled view mapped back to the base grid. It is *not* the P1 `error_map()` (logit cosine over the defense views), which fails on the adv model (pixel AUROC 0.47).
@@ -290,7 +313,102 @@ This confirms where the time goes before changing anything.
 
 ---
 
-## P5. Prediction averaging over views (Days 13–14)
+## Mid-review improvements (M1–M4), added 2026-10-27
+
+The mid-review slides (`Harish_midreview.pdf`) proposed four improvements. Their feasibility and novelty were checked on 2026-10-27, and each now has a place in the plan, with evidence from P2–P4. The thesis presents them as **"mid-review proposal → test → outcome"**, so the change of direction is visible and backed by data.
+
+| Slide gap | Proposal | Status | Evidence / plan |
+|:--|:--|:--|:--|
+| G1 | Adaptive transformation selection | **Partly done; M1 below** | P2 compared 6 view types × 5 measures and picked `down` for the signal. M1 applies the same data-driven selection to the *defense* views |
+| G2 | Adaptive defense strength from prediction confidence | **Done; the signal was changed** | Confidence fails. Attacked images are *more* confident (clean-model entropy image AUROC 0.018), and the entropy-guided budget collapses PGD+def to 2.61. The equivariance signal works (gate + per-image: 51.97 / 26.12). M2b adds a fair entropy-gate baseline |
+| G3 | Confidence-weighted dense equivariance loss | **M3 below** (one cheap test) | The slide weights by σ(x+δ), which the optimiser can push up. Test the detached equivariance error as the weight, plus the slide's σ version, against uniform |
+| G4 | Multi-scale feature equivariance | **Rejected as a signal (P2); defense loss is future work** | Feature-level measures separate attacks much worse than softmax L2 (adv-model pixel AUROC 0.39–0.61 vs 0.92) |
+| Future work | Fewer optimisation steps | **Done (P3)** | `one_step`: same robustness, ~20× faster |
+| Future work | ImageNet, VOC, COCO | **Out of scope** | No time to train or validate new checkpoints. Listed as future work |
+
+**Pre-registered decision rules for M1–M3** (written 2026-10-27, before any run). Common setup:
+- `tune100`, seeds 0–2, both models, PGD-50 cached.
+- Each model runs in its current best pipeline: clean model = gate+perimage; adv model = global `one_step`.
+- Numbers are 3-seed means. A change "passes" by the rule given for each item.
+
+### M1. Data-driven defense view selection (G1)
+
+**Why:** the two 2× upscale views (cnt 0 and 2) take 63–76% of the defense time (P3b profile) and are the weakest views in P2 (`up|l2_softmax` adv pixel AUROC 0.70 vs 0.92 for `down`). Dropping them is the cheapest speed-up left.
+
+| Variant | Clean model (now 7 views) | Adv model (now 9 views) |
+|:--|:--|:--|
+| `full` | 2×, 0.3×, 2×, 0.5×, rot, rot | + ColorJitter, flip |
+| `no_up` | 0.3×, 0.5×, rot, rot (5 views) | 0.3×, 0.5×, rot, rot, jitter, flip (7 views) |
+| `up1.5` | both 2× views replaced by 1.5× | same |
+
+- **Code:** add a `view_set` option to `EquiDefense`. The default must reproduce the current views exactly.
+- **Rule:** keep the fastest variant whose PGD+def **and** clean+def are both within 1.5 of `full`, on both models. If none qualifies, keep `full` and report the speed–robustness trade-off.
+- **Must also hold in P6:** fewer views could make BPDA easier. If a reduced set is adopted, run BPDA-10 on it as well.
+- **Novelty:** modest; present it as an engineering and analysis result, not as a contribution. *Per-input* view selection (choosing views from the error map of each image) is future work.
+
+### M2b. Entropy-gate baseline (G2)
+
+**Why:** the claim says *equivariance*-guided, so the image-level gate must be compared with the obvious confidence-based gate. Raw entropy points the wrong way, but its **inverse** (low entropy → defend) has clean-model image AUROC 0.982. That makes it a strong baseline, not a weak one.
+
+- **Run:** gate+perimage with the image score = −mean entropy. τ is set so 95% of clean images pass, and the per-image budget is calibrated the same way as for `equi`.
+- **Rule:**
+  - If the equivariance gate beats the entropy gate by > 1.5 on either metric, the "equivariance-guided" wording stands on plain PGD.
+  - If they tie, the wording has to rest on P6a. Both gates get attacked there, and the claim holds only if the equivariance gate is clearly harder to evade.
+  - If entropy wins on both, rename the contribution "consistency-gated adaptive defense" and report both signals.
+- Entropy is equally easy for an attacker to target (raise the entropy), so include the entropy gate in P6a.
+
+### M3. Weighted dense equivariance loss (G3)
+
+**Why:** this tests the slide's idea directly. The defense loss upweights pixels that look attacked, so the single sign step spends its effort there. After P4 the expected effect is small, since budget placement didn't matter. One overnight run settles it either way.
+
+- **Weights:** per-pixel w_p ≥ 0 at feature resolution, normalised to mean 1 per image, **detached**. Each view's features (mapped back to the base grid) and f₀ are multiplied by √w_p before the upstream global L2 normalisation and dot product. With w ≡ 1 this reproduces the current loss exactly.
+
+| Variant | w_p |
+|:--|:--|
+| `uniform` | 1 (current) |
+| `equi` | smoothed `down|l2_softmax` map (the same map as the gate) |
+| `conf` (slide version) | max softmax of f₀, detached |
+
+- **Rule:** keep `equi` if it beats `uniform` by > 1.5 on PGD+def while losing ≤ 1.5 on clean+def, on at least one model. Otherwise report it as a negative result, next to the P4 placement test (same conclusion: *where* the defense acts matters less than *how much*).
+- **Novelty:** there are pixel-weighted *training* losses (pixel-reweighted adversarial training, 2024). A test-time defense loss weighted by the dense equivariance error is, as far as we found, new for segmentation. Claim it only if it passes.
+
+### M4. Multi-scale feature equivariance (G4): not run
+
+P2 already shows that penultimate-layer and logit-cosine measures separate attacks worse than softmax L2 on the adv model. A multi-scale *defense loss* would mean a new loss with new hyperparameters and a new tuning round, which the schedule can't absorb. Report the P2 evidence and list it as future work.
+
+---
+
+## P4c. Final config and test100 confirmation (Days 6–7)
+
+1. **Lock the config** from P6a and the M1–M3 rules:
+   - the budget floor (if P6a broke the gate)
+   - the view set (M1)
+   - the loss weighting (M3)
+   - the signal (M2b)
+
+   Record it in this file before running test100.
+2. **Adv model ε_v retune** (tune100 already done): `one_step` global ε_v at 4, 6 and 10/255. Tune100: 4/255 gives 47.06 clean+def / 27.86 PGD+def; 10/255 (preset) gives 40.90 / 27.80. Choose by PGD+def first, then clean+def. Confirm the choice on test100.
+3. **test100, 3 seeds, both models.** Fill the table below. Seed std on test100 has been ≤ 0.9.
+
+| Model | Variant | Clean+def | PGD+def | sec/img |
+|:--|:--|:--:|:--:|:--:|
+| both | No defense | 58.05 / 51.07 | 1.31 / 24.84 | 0 |
+| both | Original defense (20 steps, paper ε_v) | 34.16 / 43.47 | 27.34 / 27.51 | 7.2 / 8.3 |
+| both | `one_step`, paper ε_v | 34.86 / 44.03 | 26.84 / 27.51 | 0.35 / 0.41 |
+| adv | `one_step`, retuned ε_v | | | |
+| adv | perpixel (small effect, below threshold; reported for completeness) | | | |
+| clean | gate only | | | |
+| clean | perimage only | | | |
+| clean | gate+perimage, equivariance signal (**ours**) | | | |
+| clean | gate+perimage, entropy signal (M2b) | | | |
+| clean | ours + budget floor (only if P6a needs it) | | | |
+| both | ours + M1 view set / + M3 weighting (only if they passed) | | | |
+
+**Done when:** the table is filled and committed. The headline is a clean-model row: clean+def close to the undefended model, at PGD+def within 1.5 of the original defense.
+
+---
+
+## P5. Prediction averaging over views (Days 13–14, optional)
 
 After the defense, predict on the restored image and its views, map each prediction back (resize back; un-flip; inverse-rotate with mask), and average the softmax probabilities over valid pixels.
 
@@ -301,19 +419,40 @@ After the defense, predict on the restored image and its views, map each predict
 
 ---
 
-## P6. Adaptive evaluation (Days 15–20)
+## P6a. Gate-aware adaptive attack (Days 4–5, moved forward on 2026-10-27)
 
-Attack the **final system** (P4 + P5) and the **original defense**, on `test100` (or 50 images for the expensive attacks).
+**Why first:** the main result works by giving attacked images a large budget and clean images almost none. An attacker who keeps the consistency score s(x+δ) low gets past the gate, and the undefended clean model drops to about 1 mIoU. This decides the thesis claim, so it runs **before** the test100 confirmation and the slides.
+
+**Attack** (clean model, `tune100`, 50 images, seed 0; then 3 seeds on the chosen settings):
+- Maximise L_task(defended prediction) − λ·s(x+δ), where s = mean `down|l2_softmax`. Gradients go through s exactly (it is differentiable: one 0.5× forward) and through the defense by BPDA.
+- λ ∈ {1, 10, 100, 1000}, 50 steps, ε = 4/255, plus one variant with 100 steps.
+- A hard version: early stopping per image at the step where s < τ *and* the undefended prediction is still wrong.
+- Run the same attack on the M2b entropy gate (target: lower the entropy score).
+
+**Report:**
+- Gate TPR under attack (the fraction of attacked images still defended).
+- The mean per-image budget.
+- Final robust mIoU of ours, of the original defense, and of the undefended model.
+- **The evasion cost:** the undefended mIoU of the attacks that evade the gate. If evading the gate means the perturbation must be consistent across scales, the attack gets weaker. This is the paper's own argument, applied to the gate.
+
+**Decision (pre-registered):**
+- **Gate holds:** the worst-case robust mIoU over λ is within 1.5 of the original defense's PGD+def → keep the config.
+- **Gate breaks:** add a **budget floor**, ε_img ≥ β_img·ε_v with β_img ∈ {0.3, 0.5}, so no image is fully undefended. Choose β_img on `tune100` by worst-case robust mIoU under this attack. Report the clean-accuracy cost of the floor.
+- **Even the floor fails:** report the gate as broken by adaptive attack. The contribution then rests on the speed result, the per-image budget (if it survives) and the findings list. Discuss with the guide on day 6.
+
+## P6b. Remaining attacks (Days 8–12)
+
+Attack the **final system** (P4c config, + P5 if adopted) and the **original defense**, on `test100` (or 50 images for the expensive attacks).
 
 | Attack | Source | Implementation note | Images |
 |:--|:--|:--|:--:|
 | PGD-50 | Madry 2018 | cached (P0) | 100 |
-| SegPGD-50 | Gu et al. 2022 | L = (1−λ_t)·CE(correct pixels) + λ_t·CE(wrong pixels), λ_t = (t−1)/(2T) | 100 |
+| SegPGD-50 | Gu et al. 2022 | already in `equi_lib/attacks.py` (`segpgd`) | 100 |
 | BPDA-10 | Athalye 2018 | identity backward through the defense (reuse `evaluate_bpda_defense.py` logic) | 50 |
 | BPDA-10 + EOT-4 | Athalye 2018; Croce 2022 | average the BPDA gradient over 4 defense runs (random views) | 50 |
 | Full-gradient (smoothed) | Lee & Kim 2023 (surrogate idea) | sign replaced by a smooth surrogate (see the P3 gradient check), 2–5 unrolled steps, gradient checkpointing and AMP; 16 GB will not fit the full 20-step unroll | 20–50 |
-| **Gate-aware** | adapted from upstream `PGD_attack_new_adaptive` | L = L_task − λ·mean(e(x+δ)), λ ∈ {1, 10, 100, 1000} (paper's strongest λ_e is 1000), to slip past the gate. Gradients flow through the error map for the attacker | 50 |
-| **ε(p)-aware** | this project | the gate fires but the attacker keeps the local error low where the attack sits, so ε(p) stays small there | 50 |
+| **Gate-aware** | P6a | re-run the strongest P6a setting on `test100`, 3 seeds, against the final config | 50 |
+| ε(p)-aware | this project | **only if** a per-pixel variant is in the final config (after P4 it is not); otherwise dropped | — |
 | CosPGD-50 | Agnihotri et al. 2023 | a few lines on top of PGD | 100 |
 | BPDA over intermediate iterates | Croce et al. 2022 | average the BPDA gradient over the defense's intermediate steps (how SOAP was broken) | 50 |
 | Fixed-seed and transfer | Croce et al. 2022 | freeze the RNG and attack the now-deterministic defense; transfer unsuccessful perturbations from the undefended model | 50 |
@@ -322,27 +461,34 @@ Attack the **final system** (P4 + P5) and the **original defense**, on `test100`
 - Report results **with and without EOT**: the injected randomness can inflate robustness, so a cleaner optimiser may look worse under EOT.
 - Sanity checks: attack-steps and ε curves should reach near 0 at large ε; white-box should beat transfer; add a random-noise control.
 - Optional if time remains: a reduced SEA (APGD over masked CE and JS losses, 100 iterations, via BPDA). No test-time segmentation defense has been evaluated with SEA.
-- The gate-aware attack is essential: the main idea relies on e, so lecturers will ask whether an attacker can fake a low error.
-- If it breaks the gate, report that honestly and show how much the per-pixel budget (without the gate) still holds.
+- The gate-aware attack is essential: the main idea relies on e, so lecturers will ask whether an attacker can fake a low error. It runs first (P6a); this phase repeats it on test100 against the locked config.
+- If it breaks the gate, report that honestly and show how much the budget floor (P6a) still holds.
+- If M1 adopted a reduced view set, also run BPDA-10 on it (fewer views could be easier to attack).
 
 **Cost:** BPDA-10 with a 3-step defense is ~4× cheaper than Task 6's 1.5 min/image, about 20 min per 50 images.
 
 ---
 
-## P7. Final runs, demo, write-up (Days 21–25)
+## P7. Final runs, demo, write-up (Days 15–25)
 
-- **Day 21:** final configurations on `full500` with seed 42 (overnight) for both models, so they line up with the reproduction table.
-- **Day 22, demo** (`demo/app.py`, Gradio):
+- **Days 15–16:** final configurations on `full500` with seed 42 (overnight) for both models, so they line up with the reproduction table.
+- **Day 17, demo** (`demo/app.py`, Gradio):
   - choose an image and a model
-  - attack it (PGD or SegPGD)
-  - show the clean / attacked / original-defense / our-defense segmentation maps, the equivariance error map, and the budget map
+  - attack it (PGD, SegPGD or the gate-aware attack)
+  - show the clean / attacked / original-defense / our-defense segmentation maps, the equivariance consistency map, the gate decision and the per-image budget
   - show mIoU and time
-- **Days 23–24, thesis:**
+- **Days 18–22, thesis:**
   - reproduction (`REPRODUCTION_REFERENCE.md`)
-  - the two findings (one-step collapse; weaker under BPDA on the adversarially trained model, since Mao already report the BPDA drop for the clean model)
-  - method, ablations, adaptive evaluation, limitations
-- **Day 25:** slides and buffer.
-- **Cut from scope** (mention as future work): restart selection by lowest loss (SOAP did this and was broken), diffusion priors, certification, patch attacks, new datasets or backbones.
+  - the findings list under "Goal" (one-step collapse; weaker under BPDA on the adv-trained model, since Mao already report the BPDA drop for the clean model; unrolled gradient = BPDA; placement doesn't matter; confidence inverted; features weaker; ε_v not optimal)
+  - method (signal choice from P2, gate, per-image budget), ablations (P4c table), adaptive evaluation (P6), limitations
+  - **a chapter or section "From the mid-review to the final design"** built on the M1–M4 table, so the reader sees each proposal, its test and its outcome. Negative results count as results.
+- **Days 23–25:** slides (reuse the P2 figures and the P4c / P6 tables) and buffer.
+- **Future work** (list in the thesis):
+  - multi-scale feature equivariance as a defense loss (G4)
+  - per-input view selection (G1)
+  - other datasets (ImageNet, VOC, COCO) and backbones
+  - restart selection by lowest loss (SOAP did this and was broken)
+  - diffusion priors, certification, patch attacks
 
 ---
 
@@ -371,7 +517,9 @@ Attack the **final system** (P4 + P5) and the **original defense**, on `test100`
 |:--|:--|:--|
 | Error doesn't separate clean from attacked | P2 AUROC below threshold | Fallback plan in P2 |
 | Faster optimiser loses robustness | P3 table | Keep `original`; drop the speed claim |
-| Gate-aware attack breaks the gate | P6 | Report it; show per-pixel-only results; discuss as a limitation |
-| Schedule slips | Behind by > 2 days at end of P4 (day 12) | Skip P5, run P6 on 50 images only |
+| Gate-aware attack breaks the gate | P6a (day 5) | Budget floor β_img; if that fails too, report it as a limitation and fall back to the findings + speed contribution (guide meeting day 6) |
+| Entropy gate does as well as the equivariance gate | M2b (day 4) | Settle it with P6a; otherwise rename the contribution as in M2b |
+| test100 doesn't confirm the tune100 gain | P4c (day 7) | Report the test100 numbers as they are; never re-tune on test100 |
+| Schedule slips | Behind by > 2 days at day 12 | Skip P5 and M3, run P6b on 50 images only |
 | Full-gradient attack doesn't fit in 16 GB | OOM, or the P3 gradient check shows cosine ≈ 1 (it does: 1.000000) | Smoothed 2–5 step surrogate with checkpointing and AMP, on 20–50 images |
 | Windows spills GPU memory into system RAM | No out-of-memory error; the run just becomes several times slower (P3: the unrolled check peaked at 21.9 GB on the 16 GB card; adv batch 4 ran at 26.6 s/img) | For P6, log `torch.cuda.max_memory_allocated()` and sec/img per run; treat a peak > 15 GB as a failed configuration |
