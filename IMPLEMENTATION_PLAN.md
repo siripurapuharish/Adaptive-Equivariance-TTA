@@ -376,6 +376,31 @@ The mid-review slides (`Harish_midreview.pdf`) proposed four improvements. Their
 - **Rule:** keep `equi` if it beats `uniform` by > 1.5 on PGD+def while losing ≤ 1.5 on clean+def, on at least one model. Otherwise report it as a negative result, next to the P4 placement test (same conclusion: *where* the defense acts matters less than *how much*).
 - **Novelty:** there are pixel-weighted *training* losses (pixel-reweighted adversarial training, 2024). A test-time defense loss weighted by the dense equivariance error is, as far as we found, new for segmentation. Claim it only if it passes.
 
+### Outcome of M1 / M2b / M3 (2026-10-27; tune100, seeds 0–2; `python -m equi_lib.m_analyze`, `results/improvements/mid/m_decision_tune100.json`)
+
+Δ = paired difference vs the same-code base run (clean+def / PGD+def). Base rerun reproduced P4 (clean model 51.97 / 26.11; adv global 6/255 45.49 / 28.19).
+
+| Model | Variant | clean+def | PGD+def | Δ | s/img (PGD+def) |
+|:--|:--|:--:|:--:|:--:|:--:|
+| Clean | base (gate+perimage, full views) | 51.97 ± 0.22 | 26.11 ± 0.40 | | 0.36 |
+| Clean | M1 `no_up` | 51.39 ± 0.47 | 24.00 ± 0.39 | −0.58 / **−2.11** | 0.13 |
+| Clean | M1 `up1.5` | 51.96 ± 0.06 | 25.38 ± 0.46 | −0.01 / −0.74 | 0.25 |
+| Clean | M3 `equi` weight | 51.61 ± 0.19 | 25.29 ± 0.67 | −0.36 / −0.83 | 0.40 |
+| Clean | M3 `conf` weight | 51.98 ± 0.19 | 26.11 ± 0.43 | +0.01 / −0.00 | 0.40 |
+| Clean | M3 `inv_conf` weight | 51.53 ± 0.33 | 20.03 ± 0.08 | −0.44 / **−6.08** | 0.40 |
+| Clean | M2b entropy gate + perimage | 52.11 ± 0.01 | 25.26 ± 0.08 | equi − entropy: −0.14 / +0.86 | 0.39 |
+| Clean | M2b entropy gate only | 51.41 ± 0.08 | 25.27 ± 0.34 | equi − entropy: −2.04 / +1.06 | 0.39 |
+| Clean | equi gate only (rerun) | 49.37 ± 0.19 | 26.33 ± 0.55 | | 0.38 |
+| Adv | base (global one_step 6/255) | 45.49 ± 0.41 | 28.19 ± 0.22 | | 0.46 |
+| Adv | M1 `no_up` | 45.18 ± 0.18 | 28.39 ± 0.32 | −0.31 / +0.20 | 0.20 |
+| Adv | M1 `up1.5` | 45.53 ± 0.50 | 28.54 ± 0.26 | +0.04 / +0.35 | 0.34 |
+| Adv | M3 `equi` / `conf` / `inv_conf` | 45.03 / 45.66 / 44.79 | 28.65 / 28.12 / 28.36 | all within ±0.7 | 0.46 |
+
+- **M1: adopt `up1.5`.** It is within 1.5 of `full` on both models, at ~1.4× less defense time. `no_up` fails on the clean model (−2.11 PGD+def). That matches the paper's Table 6: resize views matter, but 2× isn't needed. Timings were measured on a mostly idle GPU; re-time on 10 images before quoting them.
+- **M2b: tie → the wording rests on P6a.** The calibrated entropy gate defends 97% of PGD images at the 5% clean rate (equi: 100%) and gives the same mIoU within 1.5. So on plain PGD, the confidence gate (inverted) is as good as ours.
+- **M3: fails on every variant (negative result).** `conf` weights are ~uniform (the max softmax is close to 1 almost everywhere), so they change nothing. `inv_conf` hurts the clean model by 6.1. `equi` is within noise. This is the same conclusion as the P4 placement test: where the defense acts matters less than how much.
+- **Timing caveat:** M1 runs overlapped a few minutes of smoke tests at the start; the speed column is indicative only.
+
 ### M4. Multi-scale feature equivariance (G4): not run
 
 P2 already shows that penultimate-layer and logit-cosine measures separate attacks worse than softmax L2 on the adv model. A multi-scale *defense loss* would mean a new loss with new hyperparameters and a new tuning round, which the schedule can't absorb. Report the P2 evidence and list it as future work.
