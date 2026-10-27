@@ -1,0 +1,291 @@
+{
+ "config": {
+  "model": "clean",
+  "split": "tune100",
+  "limit": 50,
+  "seed": 0,
+  "lams": [
+   0.0
+  ],
+  "steps": 10,
+  "eps_v": null,
+  "def_opts": "{\"mode\": \"gate+perimage\"}",
+  "batch_size": 2,
+  "target": "original",
+  "tag": "bpda10_original",
+  "preset": {
+   "ckpt": "checkpoints/clean_drn_d_22_cityscapes.pth",
+   "eps_v": 0.023529411764705882,
+   "num_views": 7
+  },
+  "tau": NaN,
+  "attack": {
+   "eps": 0.01568627450980392,
+   "step": 0.00392156862745098
+  },
+  "git": "c23d9bd-dirty"
+ },
+ "results": {
+  "0": {
+   "undefended": 8.446049413253169,
+   "pipeline": 9.980589319589088,
+   "always_on": 9.859346017513715,
+   "defended_fraction": 1.0,
+   "mean_eps_frac": 1.0,
+   "mean_score": NaN,
+   "sec_per_image": 87.17000101089478,
+   "per_image": [
+    {
+     "defended": true,
+     "mean_eps_frac": 1.0,
+     "score": NaN
+    },
+    {
+     "defended": true,
+     "mean_eps_frac": 1.0,
+     "score": NaN
+    },
+    {
+     "defended": true,
+     "mean_eps_frac": 1.0,
+     "score": NaN
+    },
+    {
+     "defended": true,
+     "mean_eps_frac": 1.0,
+     "score": NaN
+    },
+    {
+     "defended": true,
+     "mean_eps_frac": 1.0,
+     "score": NaN
+    },
+    {
+     "defended": true,
+     "mean_eps_frac": 1.0,
+     "score": NaN
+    },
+    {
+     "defended": true,
+     "mean_eps_frac": 1.0,
+     "score": NaN
+    },
+    {
+     "defended": true,
+     "mean_eps_frac": 1.0,
+     "score": NaN
+    },
+    {
+     "defended": true,
+     "mean_eps_frac": 1.0,
+     "score": NaN
+    },
+    {
+     "defended": true,
+     "mean_eps_frac": 1.0,
+     "score": NaN
+    },
+    {
+     "defended": true,
+     "mean_eps_frac": 1.0,
+     "score": NaN
+    },
+    {
+     "defended": true,
+     "mean_eps_frac": 1.0,
+     "score": NaN
+    },
+    {
+     "defended": true,
+     "mean_eps_frac": 1.0,
+     "score": NaN
+    },
+    {
+     "defended": true,
+     "mean_eps_frac": 1.0,
+     "score": NaN
+    },
+    {
+     "defended": true,
+     "mean_eps_frac": 1.0,
+     "score": NaN
+    },
+    {
+     "defended": true,
+     "mean_eps_frac": 1.0,
+     "score": NaN
+    },
+    {
+     "defended": true,
+     "mean_eps_frac": 1.0,
+     "score": NaN
+    },
+    {
+     "defended": true,
+     "mean_eps_frac": 1.0,
+     "score": NaN
+    },
+    {
+     "defended": true,
+     "mean_eps_frac": 1.0,
+     "score": NaN
+    },
+    {
+     "defended": true,
+     "mean_eps_frac": 1.0,
+     "score": NaN
+    },
+    {
+     "defended": true,
+     "mean_eps_frac": 1.0,
+     "score": NaN
+    },
+    {
+     "defended": true,
+     "mean_eps_frac": 1.0,
+     "score": NaN
+    },
+    {
+     "defended": true,
+     "mean_eps_frac": 1.0,
+     "score": NaN
+    },
+    {
+     "defended": true,
+     "mean_eps_frac": 1.0,
+     "score": NaN
+    },
+    {
+     "defended": true,
+     "mean_eps_frac": 1.0,
+     "score": NaN
+    },
+    {
+     "defended": true,
+     "mean_eps_frac": 1.0,
+     "score": NaN
+    },
+    {
+     "defended": true,
+     "mean_eps_frac": 1.0,
+     "score": NaN
+    },
+    {
+     "defended": true,
+     "mean_eps_frac": 1.0,
+     "score": NaN
+    },
+    {
+     "defended": true,
+     "mean_eps_frac": 1.0,
+     "score": NaN
+    },
+    {
+     "defended": true,
+     "mean_eps_frac": 1.0,
+     "score": NaN
+    },
+    {
+     "defended": true,
+     "mean_eps_frac": 1.0,
+     "score": NaN
+    },
+    {
+     "defended": true,
+     "mean_eps_frac": 1.0,
+     "score": NaN
+    },
+    {
+     "defended": true,
+     "mean_eps_frac": 1.0,
+     "score": NaN
+    },
+    {
+     "defended": true,
+     "mean_eps_frac": 1.0,
+     "score": NaN
+    },
+    {
+     "defended": true,
+     "mean_eps_frac": 1.0,
+     "score": NaN
+    },
+    {
+     "defended": true,
+     "mean_eps_frac": 1.0,
+     "score": NaN
+    },
+    {
+     "defended": true,
+     "mean_eps_frac": 1.0,
+     "score": NaN
+    },
+    {
+     "defended": true,
+     "mean_eps_frac": 1.0,
+     "score": NaN
+    },
+    {
+     "defended": true,
+     "mean_eps_frac": 1.0,
+     "score": NaN
+    },
+    {
+     "defended": true,
+     "mean_eps_frac": 1.0,
+     "score": NaN
+    },
+    {
+     "defended": true,
+     "mean_eps_frac": 1.0,
+     "score": NaN
+    },
+    {
+     "defended": true,
+     "mean_eps_frac": 1.0,
+     "score": NaN
+    },
+    {
+     "defended": true,
+     "mean_eps_frac": 1.0,
+     "score": NaN
+    },
+    {
+     "defended": true,
+     "mean_eps_frac": 1.0,
+     "score": NaN
+    },
+    {
+     "defended": true,
+     "mean_eps_frac": 1.0,
+     "score": NaN
+    },
+    {
+     "defended": true,
+     "mean_eps_frac": 1.0,
+     "score": NaN
+    },
+    {
+     "defended": true,
+     "mean_eps_frac": 1.0,
+     "score": NaN
+    },
+    {
+     "defended": true,
+     "mean_eps_frac": 1.0,
+     "score": NaN
+    },
+    {
+     "defended": true,
+     "mean_eps_frac": 1.0,
+     "score": NaN
+    },
+    {
+     "defended": true,
+     "mean_eps_frac": 1.0,
+     "score": NaN
+    }
+   ]
+  }
+ }
+}

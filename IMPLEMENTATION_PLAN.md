@@ -469,6 +469,37 @@ After the defense, predict on the restored image and its views, map each predict
 - **Gate breaks:** add a **budget floor**, ε_img ≥ β_img·ε_v with β_img ∈ {0.3, 0.5}, so no image is fully undefended. Choose β_img on `tune100` by worst-case robust mIoU under this attack. Report the clean-accuracy cost of the floor.
 - **Even the floor fails:** report the gate as broken by adaptive attack. The contribution then rests on the speed result, the per-image budget (if it survives) and the findings list. Discuss with the guide on day 6.
 
+**Outcome, first run (2026-10-27; clean model, tune100 first 50 images, seed 0, 50 steps; gate+perimage with `up1.5`; `results/improvements/p6/p6a_{equigate,entgate}_tune100_n50_s0.json`):**
+
+| λ | Equi gate: undefended / pipeline / always-on* | defended | Entropy gate: undefended / pipeline / always-on* | defended |
+|:--:|:--:|:--:|:--:|:--:|
+| 0 | 2.68 / 3.61 / 5.29 | 1.00 | 1.14 / 1.14 / 14.70 | 0.04 |
+| 1 | 2.81 / **2.95** / 12.22 | 0.84 | 0.98 / 0.98 / 16.61 | 0.00 |
+| 10 | 5.50 / 5.48 / 17.27 | 0.06 | 0.98 / 0.98 / 20.64 | 0.00 |
+| 100 | 6.05 / 6.05 / 19.25 | 0.00 | 0.99 / 0.99 / 25.35 | 0.00 |
+| 1000 | 6.32 / 6.32 / 19.10 | 0.00 | 0.95 / 0.95 / 25.19 | 0.00 |
+
+\* always-on = `one_step` at global ε_v on the same x_adv. It is not attacked directly, so for λ > 0 it is a transfer number, not a robustness number.
+
+- **Both gates are evaded.** The equivariance gate needs an explicit evasion term, and evading it costs the attacker damage (undefended 6.3 vs 2.7). The entropy gate is evaded even at λ = 0: the per-image best-iterate picks the early iterates, before the model turns confident. **M2b verdict: the equivariance gate is clearly harder to fool (worst case 2.95 vs 0.95), so the "equivariance-guided" wording stands, but only in relative terms.**
+- **BPDA through the defense breaks the clean model even without evasion** (λ = 0: pipeline 3.61, always-on 5.29, against 26 under plain PGD). The paper reports the same weakness for its 20-step defense (Table 2: 11.64 under BPDA-10). A budget floor can gain at most the gap to always-on (~2.3 mIoU here).
+- **Pre-registered rule:** "gate breaks", and in absolute terms the floor can't fix it. A control was added before deciding: BPDA-10 (the paper's setting) against the original 20-step defense, always-on `one_step` and the gated pipeline (`p6a_bpda10_*`). It shows whether `one_step` or the gate is weaker than the original under BPDA, which is the comparison that matters.
+
+**BPDA-10 control (2026-10-27; same 50 images, seed 0, 10 steps; `results/improvements/p6/p6a_bpda10_*_tune100_n50_s0.json`):**
+
+| Defense attacked | λ | undefended | **attacked defense** | always-on* | defended | s/img |
+|:--|:--:|:--:|:--:|:--:|:--:|:--:|
+| original 20-step (upstream) | 0 | 8.45 | **9.98** | 9.86 | 1.00 | 87.2 |
+| `one_step`, always on (up1.5) | 0 | 8.98 | **9.74** | 9.74 | 1.00 | 3.7 |
+| ours: equi gate + per-image (up1.5) | 0 | 6.46 | **9.18** | 11.80 | 1.00 | 3.4 |
+| ours | 1 | 8.50 | **8.75** | 14.65 | 0.88 | 3.5 |
+| ours | 10 | 14.05 | **14.22** | 18.65 | 0.02 | 2.1 |
+
+- **Under the same attack, the original 20-step defense is no better:** 9.98 vs 9.74 for `one_step` (Δ −0.24, noise) at 24× less time. The paper's 11.64 (Table 2, full val) is the same regime. So BPDA breaks the defense family, not our changes.
+- **The gate's worst case costs 1.23 vs the original** (8.75 at λ = 1 vs 9.98), within the 1.5 threshold. Full evasion (λ = 10) *helps* the defender (14.22): the evasion term uses up the attacker's budget, the same evasion-cost effect as in the 50-step run.
+- **50 steps are much stronger than 10:** `one_step` always-on drops from 9.74 (BPDA-10) to 5.29 (BPDA-50, λ = 0, above). The paper's BPDA-10 understates the attack; P6b reports BPDA-50 too. The original at 50 steps would take ~6 h for 50 images, so it is not run here.
+- **Reading of the rule:** the strict pre-registered comparison (worst case vs the original's *plain-PGD* PGD+def, 27.34) says "gate breaks", so the budget floor is tested next as pre-registered (β_img ∈ {0.3, 0.5}, BPDA-50, λ ∈ {0, 1, 10}). The like-for-like comparison (same attack on both) says the gate costs ≤ 1.23. Both are reported.
+
 ## P6b. Remaining attacks (Days 8–12)
 
 Attack the **final system** (P4c config, + P5 if adopted) and the **original defense**, on `test100` (or 50 images for the expensive attacks).
