@@ -344,7 +344,9 @@ The mid-review slides (`Harish_midreview.pdf`) proposed four improvements. Their
 - **Code:** add a `view_set` option to `EquiDefense`. The default must reproduce the current views exactly.
 - **Rule:** keep the fastest variant whose PGD+def **and** clean+def are both within 1.5 of `full`, on both models. If none qualifies, keep `full` and report the speed–robustness trade-off.
 - **Must also hold in P6:** fewer views could make BPDA easier. If a reduced set is adopted, run BPDA-10 on it as well.
-- **Novelty:** modest; present it as an engineering and analysis result, not as a contribution. *Per-input* view selection (choosing views from the error map of each image) is future work.
+- **Optional 4th variant:** `no_up` + random-offset crops (Xiao et al. 2018). Random views are harder for an attacker to predict than a fixed set.
+- **Novelty:** modest; present it as an engineering and analysis result, not as a contribution.
+- **Per-input learned selection, as on the slide:** rejected in the feasibility check. It needs training, and it is one more decision an attacker can steer. Learned per-input augmentation exists for corruptions (Kim et al., NeurIPS 2020), not for adversarial defense. Future work.
 
 ### M2b. Entropy-gate baseline (G2)
 
@@ -356,6 +358,7 @@ The mid-review slides (`Harish_midreview.pdf`) proposed four improvements. Their
   - If they tie, the wording has to rest on P6a. Both gates get attacked there, and the claim holds only if the equivariance gate is clearly harder to evade.
   - If entropy wins on both, rename the contribution "consistency-gated adaptive defense" and report both signals.
 - Entropy is equally easy for an attacker to target (raise the entropy), so include the entropy gate in P6a.
+- **Novelty (from the feasibility check):** low for "per-input defense strength" in general (SSNI, DGAP; Mao et al. A.3.1 detect-then-defend). Cite them. What is ours: the measured signal choice, the per-image budget for segmentation, and the adaptive evaluation.
 
 ### M3. Weighted dense equivariance loss (G3)
 
@@ -368,6 +371,7 @@ The mid-review slides (`Harish_midreview.pdf`) proposed four improvements. Their
 | `uniform` | 1 (current) |
 | `equi` | smoothed `down|l2_softmax` map (the same map as the gate) |
 | `conf` (slide version) | max softmax of f₀, detached |
+| `inv_conf` | 1 − max softmax of f₀, detached. The feasibility check asked for both directions: upweighting confident pixels spends the effort where the image is already fine, while the attack sits in the uncertain ones |
 
 - **Rule:** keep `equi` if it beats `uniform` by > 1.5 on PGD+def while losing ≤ 1.5 on clean+def, on at least one model. Otherwise report it as a negative result, next to the P4 placement test (same conclusion: *where* the defense acts matters less than *how much*).
 - **Novelty:** there are pixel-weighted *training* losses (pixel-reweighted adversarial training, 2024). A test-time defense loss weighted by the dense equivariance error is, as far as we found, new for segmentation. Claim it only if it passes.
