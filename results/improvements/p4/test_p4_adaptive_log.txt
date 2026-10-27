@@ -1,0 +1,33 @@
+
+=== clean model: eps_v 6/255, 7 views
+  [PASS] consistency_map == P2 down|l2_softmax (clean input) max |diff| 0.00e+00, shape (2, 43, 85)
+  [PASS] consistency_map == P2 down|l2_softmax (pgd input) max |diff| 0.00e+00, shape (2, 43, 85)
+  [PASS] eps_map == eps_v reproduces scalar one_step (scalar rerun mismatch up to 9.88e-05, map vs closest scalar run 8.43e-05 of entries)
+  [PASS] |delta| <= eps_map everywhere (max excess 0.00e+00)
+  [PASS] eps_map == 0 gives delta == 0 
+  [PASS] gate with tau=+inf returns x unchanged 
+  [PASS] gate stats recorded 
+  [PASS] budget map detached and in [beta, 1] * eps_v (range 0.409..1.000 of eps_v, mean 0.989)
+  [PASS] perimage / shuffled keep each image's mean budget 
+  [PASS] mode perpixel runs, output in [0,1], |out-x| <= eps_v 
+  [PASS] mode perimage runs, output in [0,1], |out-x| <= eps_v 
+  [PASS] mode shuffled runs, output in [0,1], |out-x| <= eps_v 
+  [PASS] mode global runs, output in [0,1], |out-x| <= eps_v 
+
+=== adv model: eps_v 10/255, 9 views
+  [PASS] consistency_map == P2 down|l2_softmax (clean input) max |diff| 0.00e+00, shape (2, 43, 85)
+  [PASS] consistency_map == P2 down|l2_softmax (pgd input) max |diff| 0.00e+00, shape (2, 43, 85)
+  [PASS] eps_map == eps_v reproduces scalar one_step (scalar rerun mismatch up to 8.69e-04, map vs closest scalar run 5.69e-05 of entries)
+  [PASS] |delta| <= eps_map everywhere (max excess 0.00e+00)
+  [PASS] eps_map == 0 gives delta == 0 
+  [PASS] gate with tau=+inf returns x unchanged 
+  [PASS] gate stats recorded 
+  [PASS] budget map detached and in [beta, 1] * eps_v (range 0.200..1.000 of eps_v, mean 0.463)
+  [PASS] perimage / shuffled keep each image's mean budget 
+  [PASS] mode perpixel runs, output in [0,1], |out-x| <= eps_v 
+  [PASS] mode perimage runs, output in [0,1], |out-x| <= eps_v 
+  [PASS] mode shuffled runs, output in [0,1], |out-x| <= eps_v 
+  [PASS] mode global runs, output in [0,1], |out-x| <= eps_v 
+
+OVERALL: PASS
+exit 0

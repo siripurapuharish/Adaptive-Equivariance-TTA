@@ -219,6 +219,14 @@ This confirms where the time goes before changing anything.
 - Move `down|l2_softmax` from `equi_lib/p2_extended.py` into `equi_lib/defense.py` as a reusable `consistency_map(x)`, and check it reproduces the P2 tune100 AUROCs (0.987 / 0.921).
 - Compute the cut-offs a, b on `tune100` (clean and PGD-50 pixels, seed 0) and save them. The P2 JSONs store only AUROCs, not percentiles.
 
+**Pre-registered decision rule (written 2026-10-27 before any P4 mIoU was computed).** Decision runs: `tune100`, seeds 0–2, both models, `equi_lib.adaptive` with β = 0.2 and 9×9 smoothing; numbers are 3-seed means.
+- **Placement matters (the novel claim)** if `perpixel` beats **both** `perimage` (same per-image budget, no placement) and `shuffled` (same budget histogram, wrong places) by > 1.5 mIoU on PGD+def or clean+def, while losing ≤ 1.5 on the other.
+- **Beats the global curve** if the `perpixel` point (clean+def, PGD+def) lies above the global ε_v sweep curve: at the sweep's interpolated clean+def, PGD+def is > 1.5 higher, or the reverse.
+- **Both hold:** proceed with per-pixel; tune β ∈ {0, 0.2, 0.4} on `tune100`; run the test100 ablation.
+- **Only the per-image budget beats the curve:** the plan's fallback (gate + per-image budget); the per-pixel claim is dropped.
+- **Neither:** report the negative result; the contribution becomes the P3 findings plus the evaluation (discuss with the guide).
+- The clean-model gate is judged separately (it is not novel): it must keep PGD+def within 1.5 of `perpixel` while raising clean+def.
+
 **Algorithm (for each input x):**
 1. `e = consistency_map(x)` (`down|l2_softmax`), computed once from the input, **detached** (stop-gradient), so the optimiser can't game it. It uses one extra no-grad forward of a 0.5× image (cheap).
 2. **Gate (clean model only):** s = mean(e). If s < τ, return x unchanged.

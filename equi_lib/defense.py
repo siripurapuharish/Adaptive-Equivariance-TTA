@@ -120,10 +120,14 @@ class EquiDefense:
                     cost = cost - torch.sum(a * b * mask_list[i] * mask_list[j], dim=[0, 1])
         return cost
 
-    def purify_delta(self, x):
-        """Returns the defense perturbation delta (upstream return value)."""
+    def purify_delta(self, x, eps_map=None):
+        """Returns the defense perturbation delta (upstream return value).
+        eps_map (P4, one_step only): per-pixel budget broadcastable to x (e.g. [B,1,H,W]), values in [0, eps_v].
+        None means the global scalar budget eps_v (unchanged P3 code path)."""
+        if eps_map is not None and self.optimizer != "one_step":
+            raise ValueError("eps_map is implemented for optimizer='one_step' only")
         if self.optimizer != "original":
-            return self._purify_new(x)
+            return self._purify_new(x, eps_map)
         global_mask = self._global_mask(x)
         eps = self.eps_v
         delta = torch.zeros_like(x)
@@ -151,13 +155,18 @@ class EquiDefense:
         return [eps / 4 + (2 * eps - eps / 4) * 0.5 * (1 + torch.cos(torch.tensor(torch.pi * i / (T - 1))).item())
                 for i in range(T)]
 
-    def _purify_new(self, x):
+    def _purify_new(self, x, eps_map=None):
         """P3 optimisers (same objective as upstream, no gradient noise):
           one_step   : start at a random corner of the eps_v box (where upstream's 19 noisy steps end,
                        REPRODUCTION_REFERENCE.md N1), then one sign step of size 2*eps_v
           sign_decay : uniform random start, T sign steps with cosine-decayed step size
           momentum   : as sign_decay, but steps along sign(m), m <- 0.9 m + g / ||g||_1 (per image; MI-FGSM)
+        With eps_map (one_step only) the same steps run inside the per-pixel box [-eps_map, eps_map]:
+        start eps_map * sign(U), step 2 * eps_map, so delta = -eps_map * sign(g) wherever g != 0.
+        Same random draws as the scalar path, so eps_map == eps_v everywhere gives the identical delta.
         """
+        if eps_map is not None:
+            return self._one_step_map(x, eps_map)
         eps = self.eps_v
         keep_all = torch.ones(1, 1, 1, 1, dtype=torch.bool, device=x.device)  # upstream's mask keeps everything
         if self.optimizer == "one_step":
@@ -176,6 +185,29 @@ class EquiDefense:
             delta = torch.clamp(delta.detach() - eta * torch.sign(g), -eps, eps)
             delta = torch.max(torch.min(delta, 1 - x), 0 - x)
         return delta.detach()
+
+    def _one_step_map(self, x, eps_map):
+        eps_map = eps_map.detach().expand_as(x)
+        keep_all = torch.ones(1, 1, 1, 1, dtype=torch.bool, device=x.device)
+        delta = eps_map * torch.sign(torch.empty_like(x).uniform_(-1, 1))
+        delta = torch.max(torch.min(delta, 1 - x), 0 - x)
+        delta = delta.detach().requires_grad_(True)
+        g = torch.autograd.grad(self.loss(delta + x, keep_all), delta)[0]
+        delta = delta.detach() - (2 * eps_map) * torch.sign(g)
+        delta = torch.max(torch.min(delta, eps_map), -eps_map)
+        delta = torch.max(torch.min(delta, 1 - x), 0 - x)
+        return delta.detach()
+
+    @torch.no_grad()
+    def consistency_map(self, x):
+        """P4 error signal = the P2 winner `down|l2_softmax` (p2_extended.Probe, view "down"):
+            e_p = || softmax(z(x))_p - softmax(up(z(down(x))))_p ||_2
+        z = DRNSeg output [1] (19 logits at 43x85); down = bilinear 0.5x of the image; up = bilinear back
+        to z(x)'s grid. Deterministic (no random draws). Returns [B, h, w] at feature resolution, range [0, sqrt 2]."""
+        z0 = self._features(x)
+        hw = (z0.size(2), z0.size(3))
+        zv = _resize(self._features(_resize(x, (int(x.size(2) * 0.5), int(x.size(3) * 0.5)))), hw)
+        return (F.softmax(z0, 1) - F.softmax(zv, 1)).norm(dim=1)
 
     def __call__(self, x, y=None):
         """Same interface as defenses.OriginalDefense: returns the defended image. Labels are unused."""

@@ -40,3 +40,13 @@ DEFENSES = {
     "momentum3": _equi("momentum", 3),
     "momentum5": _equi("momentum", 5),
 }
+
+
+def _adaptive(model, normalize, eps_v, num_views, device="cuda", **opts):
+    from .adaptive import make_adaptive
+    return make_adaptive(model, normalize, eps_v, num_views, device=device, **opts)
+
+
+# P4: equi_lib.adaptive.AdaptiveDefense; options (mode, signal, beta, smooth) via runner --def-opts.
+DEFENSES["adaptive"] = _adaptive
+DEFENSE_TAKES_OPTS = {"adaptive"}

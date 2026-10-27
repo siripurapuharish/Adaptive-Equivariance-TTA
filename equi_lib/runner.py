@@ -20,7 +20,7 @@ from . import RESULTS_DIR, ROOT_DIR
 from .attacks import PGD_PARAMS, pgd
 from .cache import PGDCache
 from .data import load_batch, split_indices
-from .defenses import DEFENSES
+from .defenses import DEFENSE_TAKES_OPTS, DEFENSES
 from .metrics import CLASSES, ConfusionMeter
 from .model import PRESETS, Normalizer, load_model
 from .seed import set_seed
@@ -46,6 +46,7 @@ def run_seed(args, seed, model, normalize, defense, indices, device):
     set_seed(seed)
     meters = {m: ConfusionMeter() for m in args.modes}
     secs = defaultdict(float)
+    dstats = defaultdict(list)   # per-image defense stats (adaptive defenses only)
     need_pgd = any(m.startswith("pgd") for m in args.modes)
     cache = PGDCache(args.model, seed, PGD_PARAMS) if (need_pgd and not args.no_cache) else None
 
@@ -89,6 +90,8 @@ def run_seed(args, seed, model, normalize, defense, indices, device):
                 x_def = defense(inp, y)
                 torch.cuda.synchronize()
                 secs[mode] += time.time() - t
+                if hasattr(defense, "pop_stats"):
+                    dstats[mode] += defense.pop_stats()
                 with torch.no_grad():
                     meters[mode].update(model(normalize(x_def))[0], y)
 
@@ -99,11 +102,19 @@ def run_seed(args, seed, model, normalize, defense, indices, device):
     if cache is not None:
         cache.save()
     n = len(indices)
-    return {
+    out = {
         "miou": {m: meters[m].miou() for m in args.modes},
         "per_class_iou": {m: dict(zip(CLASSES, np.round(meters[m].per_class(), 2).tolist())) for m in args.modes},
         "sec_per_image": {k: v / n for k, v in secs.items()},
     }
+    if dstats:
+        out["defense_stats"] = {
+            m: {"defended_fraction": float(np.mean([d["defended"] for d in v])),
+                "mean_eps_frac": float(np.mean([d["mean_eps_frac"] for d in v])),
+                "mean_score": float(np.mean([d["score"] for d in v])),
+                "per_image": v}
+            for m, v in dstats.items()}
+    return out
 
 
 def main():
@@ -119,21 +130,35 @@ def main():
     ap.add_argument("--clean-noise", action="store_true",
                     help="clean+def defends x + U(-4/255, 4/255) like upstream (Note B); default defends plain x")
     ap.add_argument("--tag", default=None, help="output name prefix (default: <model>_<defense>)")
+    ap.add_argument("--eps-v", type=float, default=None,
+                    help="defense budget in units of 1/255, overriding the preset (P4 global sweep)")
+    ap.add_argument("--def-opts", default=None,
+                    help='JSON options for the adaptive defense, e.g. \'{"mode": "perpixel", "beta": 0.2}\'')
     args = ap.parse_args()
 
     device = torch.device("cuda")
-    preset = PRESETS[args.model]
+    preset = dict(PRESETS[args.model])
+    if args.eps_v is not None:
+        preset["eps_v"] = args.eps_v / 255.0
+    def_opts = json.loads(args.def_opts) if args.def_opts else {}
+    if def_opts and args.defense not in DEFENSE_TAKES_OPTS:
+        ap.error(f"--def-opts is only valid for {sorted(DEFENSE_TAKES_OPTS)}")
     model = load_model(os.path.join(ROOT_DIR, preset["ckpt"]), device)
     normalize = Normalizer(device)
     defense = None
     if any(m.endswith("+def") for m in args.modes):
-        defense = DEFENSES[args.defense](model, normalize, preset["eps_v"], preset["num_views"], device=device)
+        if args.defense in DEFENSE_TAKES_OPTS:
+            def_opts["model_tag"] = args.model
+        defense = DEFENSES[args.defense](model, normalize, preset["eps_v"], preset["num_views"], device=device,
+                                         **def_opts)
 
     indices = split_indices(args.split)[:args.limit]
     tag = args.tag or f"{args.model}_{args.defense}"
     os.makedirs(RESULTS_DIR, exist_ok=True)
     config = {k: v for k, v in vars(args).items()}
     config.update(preset=preset, num_images=len(indices), git=git_hash())
+    if hasattr(defense, "calib_info"):
+        config["calib"] = defense.calib_info
 
     per_seed = {}
     for seed in args.seeds:
