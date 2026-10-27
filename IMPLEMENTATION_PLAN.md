@@ -500,6 +500,19 @@ After the defense, predict on the restored image and its views, map each predict
 - **50 steps are much stronger than 10:** `one_step` always-on drops from 9.74 (BPDA-10) to 5.29 (BPDA-50, λ = 0, above). The paper's BPDA-10 understates the attack; P6b reports BPDA-50 too. The original at 50 steps would take ~6 h for 50 images, so it is not run here.
 - **Reading of the rule:** the strict pre-registered comparison (worst case vs the original's *plain-PGD* PGD+def, 27.34) says "gate breaks", so the budget floor is tested next as pre-registered (β_img ∈ {0.3, 0.5}, BPDA-50, λ ∈ {0, 1, 10}). The like-for-like comparison (same attack on both) says the gate costs ≤ 1.23. Both are reported.
 
+**Budget floor (2026-10-28; BPDA-50 gate-aware attack as in the first run, same 50 images, seed 0; clean cost on tune100, 3 seeds; `results/improvements/p6/p6a_floor{03,05}_tune100_n50_s0.json`, `results/improvements/m_clean_floor{03,05}_tune100_s{0,1,2}.json`):**
+
+| Config (up1.5, equi gate + per-image) | λ = 0 | λ = 1 | λ = 10 | **worst case** | clean+def (tune100, 3 seeds) | PGD+def (plain PGD) |
+|:--|:--:|:--:|:--:|:--:|:--:|:--:|
+| no floor | 3.61 | 2.95 | 5.48 | **2.95** | 51.96 ± 0.06 | 25.38 ± 0.46 |
+| floor β_img = 0.3 | 3.63 | 3.39 | 5.76 | **3.39** | 47.76 ± 0.28 (−4.20) | 25.50 ± 0.55 |
+| floor β_img = 0.5 | 3.70 | 3.40 | 5.59 | **3.40** | 42.71 ± 0.23 (−9.25) | 25.50 ± 0.55 |
+| ref: `one_step` always on, attacked directly | 5.29 | — | — | 5.29 | — | — |
+
+- **Verdict (pre-registered): "even the floor fails".** The floor gains +0.44 in the worst case (< 1.5) and costs 4.2–9.3 clean+def. **Not adopted.**
+- The ceiling for any floor is always-on `one_step` under the same attack (5.29), only 2.3 above the gate. Under BPDA-50, the defense family itself is broken. The gate adds at most ~2.3 of extra weakness (BPDA-50) or 1.23 (BPDA-10, vs the original).
+- **Consequence for the claim** (for the guide, day 6): the gate is a *clean-accuracy* mechanism (clean+def 51.96 vs 34.16 for the original, with equal PGD+def under non-adaptive attacks). It is **not** an adaptive-robustness mechanism. The thesis states this limitation openly. The contribution rests on: (1) the 24× faster `one_step`, equal to the original under PGD and BPDA-10; (2) the gate's clean-accuracy recovery and its evasion cost (the equivariance gate is harder to evade than the entropy gate: 2.95 vs 0.95); (3) the findings list (the 20-step defense is one step; BPDA-50 ≫ BPDA-10; the per-pixel budget fails its placement test).
+
 ## P6b. Remaining attacks (Days 8–12)
 
 Attack the **final system** (P4c config, + P5 if adopted) and the **original defense**, on `test100` (or 50 images for the expensive attacks).
