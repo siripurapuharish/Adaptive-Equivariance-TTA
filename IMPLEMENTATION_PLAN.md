@@ -565,6 +565,33 @@ Candidates from E1–E2: `avg_rs` (E2) and the `−up` view set (E1). Runs: `tes
 - **Adopt `−up`**: the rule written in E1 (within 1.5 of the P4c locked config and of the P4c full-view row, both metrics).
 - `−up` + `avg_rs` together is also run; it is adopted only if both parts are adopted on their own.
 
+**Outcome (2026-10-28; test100, seeds 0–2; `python -m equi_lib.v2_analyze` → `results/improvements/v2/v2_decision_test100.json`; paired Δ vs the P4c locked config):**
+
+| Model | Variant | clean (no def) | PGD (no def) | clean+def | PGD+def | Δ vs locked | s/img (defense + predict) |
+|:--|:--|:--:|:--:|:--:|:--:|:--:|:--:|
+| clean | P4c locked (`up1.5`, plain) | 58.05 | 1.31 | 57.45 ± 0.09 | 25.77 ± 0.49 | — | 0.25 + 0.04 |
+| clean | **+ avg_rs (v2)** | 59.32 | 2.15 | **58.69 ± 0.09** | **30.39 ± 0.74** | +1.24 / **+4.62** | 0.25 + 0.13 |
+| clean | −up | 58.05 | 1.31 | 57.38 ± 0.04 | 24.15 ± 0.55 | −0.07 / −1.62 | 0.12 + 0.04 |
+| clean | −up + avg_rs | 59.32 | 2.15 | 58.61 ± 0.08 | 28.85 ± 0.57 | +1.15 / +3.08 | 0.12 + 0.13 |
+| adv | P4c locked (`up1.5`, ε_v 4, plain) | 51.07 | 24.84 | 50.20 ± 0.09 | 26.73 ± 0.07 | — | 0.31 + 0.04 |
+| adv | + avg_rs | 50.60 | 27.61 | 49.91 ± 0.13 | 29.17 ± 0.26 | −0.29 / +2.43 | 0.32 + 0.14 |
+| adv | −up | 51.07 | 24.84 | 50.01 ± 0.40 | 26.94 ± 0.15 | −0.19 / +0.21 | 0.18 + 0.04 |
+| adv | **−up + avg_rs (v2)** | 50.60 | 27.61 | **49.82 ± 0.43** | **29.51 ± 0.10** | −0.39 / **+2.78** | 0.18 + 0.14 |
+
+BPDA-50 through the averaging (first 50 test100 images, seed 0; `p6b_bpda50avgrs_ours_*`): clean model 3.89 vs plain BPDA-50 4.57 (Δ −0.68); adv model 24.72 vs 23.99 (Δ +0.73).
+
+- **`avg_rs`: adopted on both models** (rule 1: +4.62 / +2.43 PGD+def; rule 2: within 1.5 of plain BPDA-50). It helps against non-adaptive attacks and costs nothing under BPDA through it. It does **not** fix the adaptive collapse.
+- **`−up`: adopted for the adv model only.** On the clean model it loses 1.62 PGD+def (the E1 drift caveat, confirmed), so it is reported as a fast mode there.
+- **Final v2 configs:**
+  - clean model: `up1.5` + equi gate + per-image budget + `avg_rs`
+  - adv model: `up1.5-up` + global ε_v 4 + `avg_rs`
+- **Against the original 20-step defense (P4c / baselines, test100, 3 seeds):**
+  - clean model: clean+def 58.69 vs 34.16 (**+24.5**), PGD+def 30.39 vs 27.34 (**+3.05**), at 0.38 vs 7.2 s/img
+  - adv model: 49.82 vs 43.47 (**+6.35**), 29.51 vs 27.51 (**+2.00**), at 0.32 vs 8.3 s/img
+
+  The clean model's clean+def is now *above* the undefended model (58.05), because the averaging also helps clean images (59.32 undefended with averaging).
+- **Pending:** BPDA-50 on the adv model's exact v2 config (`−up` + avg_rs). The run above used `up1.5` + avg_rs, and fewer views could be easier to attack (P6b note).
+
 ### E2. Prediction averaging over views (= P5 below)
 
 Rules and variants are in the P5 section.
@@ -657,7 +684,20 @@ Image AUROC of the held-out error, attacked vs clean: clean model PGD 0.950, **B
 - Clean model, the same 50 test100 images, seed 0. Report defended mIoU, held-out error, and the image AUROC vs clean.
 - **Reading:** "self-check survives" if, at every λ, either the AUROC vs clean stays ≥ 0.90 or evading it costs the attacker ≥ 5 mIoU of damage (defended mIoU ≥ BPDA-50's 4.39 + 5). This is the same evasion-cost logic as P6a.
 
-**M5 (optional, cut first): held-out-view budget selection.** Only if B1 shows the proxy holds under PGD-50 on the clean model.
+**Outcome of E3b (2026-10-28; clean model, same 50 images, seed 0; `python -m equi_lib.e3_selfcheck --model clean --lams 1 10 100` → `results/improvements/e3/e3b_clean_test100_n50_s0.json`):**
+
+| Attack | defended mIoU | held-out error | image AUROC vs clean | rule |
+|:--|:--:|:--:|:--:|:--|
+| BPDA-50 (λ = 0) | 4.40 | 0.442 | 0.999 | detected |
+| self-check-aware λ = 1 | 4.49 | 0.306 | 0.970 | detected (≥ 0.90) |
+| self-check-aware λ = 10 | 16.84 | 0.153 | 0.782 | partly evades, but costs 12.4 mIoU of damage (≥ 5) |
+| self-check-aware λ = 100 | 49.60 | 0.022 | 0.023 | evades fully, nearly harmless (clean input: 56.38) |
+
+- **Verdict (pre-registered): the self-check survives.** At every λ tried, the attacker is either detected (AUROC ≥ 0.90) or loses ≥ 5 mIoU of damage by evading. Breaking the prediction and passing the self-check pull in opposite directions, the same evasion-cost effect as the gate in P6a, but much stronger. **This is the thesis's answer to the adaptive-attack weakness: the defense can be broken, but not silently.**
+- **Gap:** λ between 1 and 10 was not tried. λ = 3 is added after the fact as a robustness check of this verdict; it can only weaken it.
+- **Rerun note:** this run re-evaluated the E3 inputs with different defense randomness. Clean-model PGD ρ moved from −0.56 to −0.39 (pixel AUROC 0.86 both times), so B1's "proxy holds under PGD" was marginal and is **not stable**. The detection results reproduced (BPDA vs clean 0.999; PGD vs clean 0.95 → 0.94). M5's eligibility condition therefore no longer holds reliably, so **M5 is dropped**.
+
+**M5 (optional, cut first; dropped 2026-10-28, see the E3b rerun note): held-out-view budget selection.** Only if B1 shows the proxy holds under PGD-50 on the clean model.
 - For each image the gate lets through, run `one_step` at ε ∈ {ε_v/2, ε_v} and keep the result with the lower held-out error (B1 views). This costs about 2× the defense time on gated images.
 - Compare against the locked `gate+perimage` on `tune100`, 3 seeds.
 - **Pre-registered rule:** adopt only if it beats `gate+perimage` by > 1.5 on PGD+def or clean+def, losing ≤ 1.5 on the other, **and** it is not > 1.5 worse under the P6a gate-aware BPDA attack (λ = 1, 50 images).
