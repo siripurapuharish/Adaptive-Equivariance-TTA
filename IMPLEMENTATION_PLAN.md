@@ -10,16 +10,19 @@ P0–P6b finished by day 3 (2026-10-28). Under a strong adaptive attack the defe
 | Day | Date | Phase | Work |
 |:--:|:--|:--|:--|
 | 1–3 | Oct 26–28 | P0–P6b | **Done** |
-| 4 | Oct 29 | P5b | B1 proxy analysis (both models; clean, PGD-50 and BPDA-50 inputs) and D1 view redundancy. Show the guide the reframing and the P6b result |
-| 5 | Oct 30 | P5 / M5 / A1 | P5 view averaging on `tune100` (optional). M5 only if B1 passes. A1 attack-setting sweep (optional) |
-| 6 | Oct 31 | confirm | `test100` 3 seeds for anything adopted on day 5; otherwise buffer |
-| 7–8 | Nov 1–2 | P7 | `full500` runs of the final configs and the original (overnight) |
-| 9 | Nov 3 | P7 | Gradio demo |
-| 10–17 | Nov 4–11 | P7 | Thesis |
-| 18–20 | Nov 12–14 | P7 | Slides |
-| 21–25 | Nov 15–19 | — | Buffer (deadline Nov 24) |
+| 3 | Oct 28 | E1 | View-set code (flip swap, subsets) and per-image confusions; **overnight:** E1 runs on `tune100` |
+| 4 | Oct 29 | E1, E2 | E1 rules (fixed set, per-image oracle). E2 = P5 view averaging: code and `tune100` runs |
+| 5 | Oct 30 | E3 | P5b B1 self-check (held-out views) as a reliability output |
+| 6 | Oct 31 | E4 / E1b | M5 if E3 passes; a label-free per-image view rule if the E1 oracle passes; D1 / A1 optional |
+| 7 | Nov 1 | — | Exploration buffer; show the guide the results so far |
+| 8–9 | Nov 2–3 | lock v2 | Lock final config v2 from the adopted items; `test100` 3 seeds and the BPDA-50 re-check on them |
+| 10–11 | Nov 4–5 | P7 | `full500` runs of the final configs and the original (overnight) |
+| 12 | Nov 6 | P7 | Gradio demo |
+| 13–19 | Nov 7–13 | P7 | Thesis |
+| 20–21 | Nov 14–15 | P7 | Slides |
+| 22–25 | Nov 16–19 | — | Buffer (deadline Nov 24) |
 
-**Cut order if we slip (2026-10-28):** M5, then A1, then D1, then P5. **Never cut:** B1 (cheap; answers the base paper's open question), the `full500` runs, the negative results.
+**Cut order if we slip (2026-10-28):** E4 (M5), then E1b, then A1, then D1. **Never cut:** E1 (it is the guide's G1), E3 / B1, the v2 confirmation, the `full500` runs, the negative results. The `full500` runs are done last, on the final config (user's decision, 2026-10-28).
 
 ### Earlier schedule (re-planned 2026-10-27, after P4; kept for the record)
 
@@ -487,12 +490,68 @@ Paired differences (same seeds):
 
 ---
 
-## P5. Prediction averaging over views (Days 13–14, optional)
+## Exploration phase E1–E4 (added 2026-10-28, days 3–7)
+
+The time freed by finishing P0–P6b early goes to every lead that could still change the results. Each one gets a pre-registered rule on `tune100` (3 seeds, ours = the P4c locked config: clean model gate+perimage ε_v 6 `up1.5`; adv model global ε_v 4 `up1.5`). Anything adopted is confirmed on `test100` and re-attacked with BPDA-50 before it enters the final config (v2).
+
+### E1. Transformation selection: fixed subsets and the per-image oracle (G1)
+
+**Why:** the mid-review promised adaptive transformation selection (G1). It is already done at the dataset level twice (P2 picked the signal view from 6 view types × 5 measures; M1 picked `up1.5` for the defense views). E1 tests the two remaining questions:
+1. Is there a better *fixed* subset? The paper's ablation (Table 6) says flip and resize help more than rotation, yet the clean-model defense uses two rotations and no flip.
+2. Could a *per-image* choice beat any fixed set?
+
+**View subsets** (built on `up1.5`; view groups: up = the two 1.5× upscales, down = 0.3× and 0.5×, rot = the two ±15° rotations, jit = ColorJitter, flip = the flip view):
+
+| Model | Subsets |
+|:--|:--|
+| clean (base = up, down, rot) | base, −rot, −rot+flip, +flip, −down, −up |
+| adv (base = up, down, rot, jit, flip) | base, −rot, −jit, −flip, −down, −up |
+
+**Runs:** each subset, `tune100`, seeds 0–2, clean+def and PGD+def, with per-image confusion matrices saved. Base also gets seeds 3–5, for the noise oracle.
+
+**Rule 1, fixed subset (pre-registered):**
+- Adopt subset S instead of base if:
+  - it beats base by > 1.5 on PGD+def or clean+def while losing ≤ 1.5 on the other, **or**
+  - it is within ±1.5 on both and takes ≤ 0.75× base's sec/img.
+- If several qualify, take the best PGD+def.
+
+**Rule 2, per-image oracle (pre-registered):**
+- Per image, pick the subset with the highest per-image mIoU (seed 0 runs; mIoU over the classes present in the label or the prediction), and pool the chosen confusion matrices into the oracle mIoU.
+- The **noise oracle** applies the same best-of-6 pick to 6 reruns of base (seeds 0–5). Picking the best of several noisy runs inflates the score even when the runs are identical, and this measures by how much.
+- **Go to E1b** (a label-free per-image rule) only if oracle − noise oracle > 1.5 on PGD+def.
+- Clean+def is not used for the clean model's oracle: the gate leaves 93% of clean images undefended.
+- If no-go, report: "even with labels, choosing views per image cannot beat a fixed data-chosen set by more than seed noise."
+
+**E1b (only if Rule 2 passes):** a label-free rule using each view's consistency error on the input. Tune on `tune100`, then confirm on `test100` and attack with BPDA (selection is input-dependent, so it can be gamed like the gate).
+
+### E2. Prediction averaging over views (= P5 below)
+
+Rules and variants are in the P5 section.
+
+### E3. Self-check output (= P5b B1)
+
+The held-out-view error becomes a reliability output per image and per pixel, if B1's pre-registered reading passes. This is where the BPDA collapse would turn into "the system flags it".
+
+### E4. M5 held-out budget selection (P5b), D1 and A1
+
+As written in P5b and P6b. Optional; first in the cut order.
+
+---
+
+## P5. Prediction averaging over views (E2, day 4)
 
 After the defense, predict on the restored image and its views, map each prediction back (resize back; un-flip; inverse-rotate with mask), and average the softmax probabilities over valid pixels.
 
 - Use the resize and flip views; include rotations only if they help on `tune100`.
 - Report as an extra row in the P4 table, applied to both the original defense and ours, so its contribution is separated from the main idea.
+
+**Variants (added 2026-10-28):**
+- `avg_flip`: identity + horizontal flip (2 predictions)
+- `avg_rs`: identity + flip + resize 0.75× + resize 1.25× (4 predictions)
+
+Each is applied to every image after ours (gated-out images too, so the pipeline stays the same for all inputs). Also run on the **undefended** model, to separate the effect of plain test-time augmentation (a known input-transformation defense; cite Guo et al. 2018, Xie et al. 2018) from the effect on the defense.
+
+**Rule (pre-registered):** on `tune100`, 3 seeds, adopt the best variant if it beats ours by > 1.5 on PGD+def or clean+def while losing ≤ 1.5 on the other. The averaging is differentiable, so the BPDA re-check (v2) attacks through it exactly; BPDA's identity backward applies only to the purifier.
 
 **Done when:** we know whether it adds mIoU on clean and attacked inputs. If it adds nothing, report that and drop it.
 
