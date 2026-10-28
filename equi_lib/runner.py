@@ -18,6 +18,8 @@ import torch
 
 from . import RESULTS_DIR, ROOT_DIR
 from .attacks import PGD_PARAMS, pgd
+from .averaging import VARIANTS as PREDICT_VARIANTS
+from .averaging import predict
 from .cache import PGDCache
 from .data import load_batch, split_indices
 from .defenses import DEFENSE_TAKES_OPTS, DEFENSES
@@ -58,7 +60,7 @@ def run_seed(args, seed, model, normalize, defense, indices, device):
         if "clean" in meters:
             t = time.time()
             with torch.no_grad():
-                meters["clean"].update(model(normalize(x))[0], y)
+                meters["clean"].update(predict(model, normalize, x, args.predict, y.shape[-2:]), y)
             secs["clean"] += time.time() - t
 
         if need_pgd:
@@ -76,7 +78,7 @@ def run_seed(args, seed, model, normalize, defense, indices, device):
             x_adv = torch.clamp(x + delta, 0.0, 1.0)
             if "pgd" in meters:
                 with torch.no_grad():
-                    meters["pgd"].update(model(normalize(x_adv))[0], y)
+                    meters["pgd"].update(predict(model, normalize, x_adv, args.predict, y.shape[-2:]), y)
 
         x_clean_def = x
         if args.clean_noise and "clean+def" in meters:
@@ -93,8 +95,10 @@ def run_seed(args, seed, model, normalize, defense, indices, device):
                 secs[mode] += time.time() - t
                 if hasattr(defense, "pop_stats"):
                     dstats[mode] += defense.pop_stats()
-                with torch.no_grad():
-                    meters[mode].update(model(normalize(x_def))[0], y)
+                t = time.time()
+                meters[mode].update(predict(model, normalize, x_def, args.predict, y.shape[-2:]), y)
+                torch.cuda.synchronize()
+                secs["predict"] += time.time() - t
 
         done = min(b + args.batch_size, len(indices))
         print(f"  seed {seed} [{done:3d}/{len(indices)}] " +
@@ -138,6 +142,8 @@ def main():
     ap.add_argument("--attack-seed", type=int, default=None,
                     help="use the cached PGD of this seed for every --seeds run (default: each run's own seed); "
                          "E1 noise oracle: same attacks, different defense randomness")
+    ap.add_argument("--predict", default="single", choices=sorted(PREDICT_VARIANTS),
+                    help="E2 / P5: average the prediction over views (default: single = the plain prediction)")
     ap.add_argument("--per-image", action="store_true",
                     help="also save per-image confusion matrices to <output>_perimage.npz (E1 oracle)")
     ap.add_argument("--def-opts", default=None,
