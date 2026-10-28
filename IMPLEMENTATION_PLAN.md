@@ -524,6 +524,35 @@ The time freed by finishing P0–P6b early goes to every lead that could still c
 
 **E1b (only if Rule 2 passes):** a label-free rule using each view's consistency error on the input. Tune on `tune100`, then confirm on `test100` and attack with BPDA (selection is input-dependent, so it can be gamed like the gate).
 
+**Outcome (2026-10-28; tune100, seeds 0–2, ours config with each subset; `python -m equi_lib.e1_analyze` → `results/improvements/e1/e1_decision_tune100.json`):**
+
+| Model | Subset | clean+def | PGD+def | Δ clean / Δ PGD vs base | s/img (× base) |
+|:--|:--|:--:|:--:|:--:|:--:|
+| clean | base (`up1.5`) | 51.96 ± 0.06 | 25.38 ± 0.46 | — | 0.250 |
+| clean | −rot | 51.35 ± 0.41 | 25.93 ± 0.18 | −0.61 / +0.55 | 0.76× |
+| clean | −rot +flip | 51.92 ± 0.07 | 26.36 ± 0.40 | −0.04 / +0.98 | 0.88× |
+| clean | +flip | 51.84 ± 0.04 | 25.30 ± 0.38 | −0.12 / −0.08 | 1.12× |
+| clean | −down | 51.91 ± 0.15 | 21.64 ± 0.28 | −0.05 / **−3.74** | 0.96× |
+| clean | −up | 51.39 ± 0.47 | 24.00 ± 0.39 | −0.57 / −1.38 | **0.46×** |
+| adv | base (`up1.5`) | 47.02 ± 0.32 | 28.14 ± 0.14 | — | 0.318 |
+| adv | −rot / −jit / −flip / −down | 46.92–47.21 | 27.82–28.34 | all within ±0.35 | 0.82–0.97× |
+| adv | −up | 46.77 ± 0.05 | 28.04 ± 0.26 | −0.25 / −0.10 | **0.56×** |
+
+Per-image oracle (PGD+def, seed-0 attacks, best-of-6):
+
+| Model | subsets oracle | noise oracle (6 reruns of base) | gain | verdict |
+|:--|:--:|:--:|:--:|:--:|
+| clean | 27.48 (mean single run 24.45) | 28.80 (mean single 25.43) | −1.32 | no-go |
+| adv | 28.65 (28.00) | 28.71 (28.08) | −0.07 | no-go |
+
+- **Rule 2: per-image selection is a no-go on both models.** Even with labels, picking the best view subset per image gains nothing over picking the best of 6 reruns of the same subset. The noise oracle shows why the control matters: best-of-6 *reruns* alone inflate the clean model's PGD+def by +3.4 (25.43 → 28.80). Without it, per-image selection would have looked like a +3 gain. E1b is not run.
+- **Rule 1: −up qualifies on both models** (within ±1.5 on both metrics at 0.46× / 0.56× time). It is the same view set as M1's `no_up`, and the runs reproduce M1 exactly (51.39 / 24.00), as does base (51.96 / 25.38).
+- **Caveat (drift):** M1 rejected `no_up` on the clean model against `full` (−2.11 PGD+def). E1 accepts it against `up1.5`, which was itself accepted as within 1.5 of `full`. Two equivalence steps can add up to more than the threshold. So −up is **not adopted directly**; it is carried into the v2 `test100` confirmation as a candidate with a stricter, pre-registered test (below).
+- **Flip swap (−rot +flip, clean model): +0.98 PGD+def at 0.88× time, below the 1.5 threshold, so not adopted.** Its direction agrees with the paper's ablation (flip/resize > rotation). Rotations add nothing on the clean model (−rot: +0.55 PGD+def, 0.76× time, just missing the 0.75× speed rule).
+- **What the views do:** on the clean model the downscale views carry the defense (−down: −3.74), the same scale direction as the P2 signal view (0.5×). On the adv model at ε_v 4, no view group matters (all within ±0.35); only the time differs.
+
+**−up in v2 (pre-registered 2026-10-28, before any test100 run of it):** adopt −up for a model only if, on `test100` with 3 seeds, it is within 1.5 of the P4c locked config **and** within 1.5 of the P4c full-view row (`ours, full views`) on both clean+def and PGD+def. Otherwise report it as a "fast mode" with its measured cost.
+
 ### E2. Prediction averaging over views (= P5 below)
 
 Rules and variants are in the P5 section.
