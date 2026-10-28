@@ -149,6 +149,7 @@ def bpda_deltas(model_tag, model, norm, dfd, indices, device, lam=0.0, inner=Non
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--model", choices=sorted(PRESETS), required=True)
+    ap.add_argument("--tag", default=None, help="output name prefix (default: e3, or e3b with --lams)")
     ap.add_argument("--lams", type=float, nargs="*", default=[],
                     help="E3b: also evaluate self-check-aware BPDA-50 with these lambdas (written to e3b_<model>_...)")
     args = ap.parse_args()
@@ -240,7 +241,7 @@ def main():
     if bpda_check:
         print(f"  BPDA generation check (p6b seed 0 on the same images: see IMPLEMENTATION_PLAN.md P6b): {bpda_check}")
     os.makedirs(OUT_DIR, exist_ok=True)
-    out = os.path.join(OUT_DIR, f"{'e3b' if args.lams else 'e3'}_{args.model}_test100_n{len(indices)}_s{SEED}.json")
+    out = os.path.join(OUT_DIR, f"{args.tag or ('e3b' if args.lams else 'e3')}_{args.model}_test100_n{len(indices)}_s{SEED}.json")
     with open(out, "w") as f:
         json.dump(res, f, indent=1)
     print(f"  saved {os.path.relpath(out, ROOT_DIR)}")

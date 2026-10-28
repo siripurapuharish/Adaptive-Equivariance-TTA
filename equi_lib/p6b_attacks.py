@@ -149,6 +149,8 @@ def main():
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--batch-size", type=int, default=2)
     ap.add_argument("--tag", required=True)
+    ap.add_argument("--view-set", default=None,
+                    help="override the view set of ours (v2: the adv model's final config uses up1.5-up)")
     ap.add_argument("--predict", default="single", choices=sorted(PREDICT_VARIANTS),
                     help="v2: prediction averaging (equi_lib.averaging) used by the attacker and the evaluation")
     args = ap.parse_args()
@@ -162,6 +164,8 @@ def main():
     if args.target == "ours":
         eps_v, opts = OURS[args.model]
         eps_v /= 255.0
+        if args.view_set:
+            opts = dict(opts, view_set=args.view_set)
         dfn = AdaptiveDefense(model, norm, eps_v, preset["num_views"], device=device, model_tag=args.model, **opts)
     else:
         from .defenses import OriginalDefense

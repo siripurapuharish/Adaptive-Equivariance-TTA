@@ -1,0 +1,46 @@
+[
+ [
+  "v2 adv final config (-up + avg_rs) BPDA-50 (50 img, s0)",
+  [
+   "-m",
+   "equi_lib.p6b_attacks",
+   "--model",
+   "adv",
+   "--target",
+   "ours",
+   "--loss",
+   "ce",
+   "--through",
+   "bpda",
+   "--steps",
+   "50",
+   "--predict",
+   "avg_rs",
+   "--view-set",
+   "up1.5-up",
+   "--split",
+   "test100",
+   "--limit",
+   "50",
+   "--seed",
+   "0",
+   "--tag",
+   "bpda50avgrsnoup"
+  ],
+  15
+ ],
+ [
+  "E3b clean self-check-aware lam 3 (post-hoc check, 50 img, s0)",
+  [
+   "-m",
+   "equi_lib.e3_selfcheck",
+   "--model",
+   "clean",
+   "--lams",
+   "3",
+   "--tag",
+   "e3b_lam3"
+  ],
+  20
+ ]
+]
