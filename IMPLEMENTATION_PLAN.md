@@ -572,6 +572,45 @@ Attack the **final system** (P4c config, + P5 if adopted) and the **original def
 
 **Cost:** BPDA-10 with a 3-step defense is ~4× cheaper than Task 6's 1.5 min/image, about 20 min per 50 images.
 
+**Outcome (2026-10-28; test100; `python -m equi_lib.p6b_summary` → `results/improvements/p6/p6b_summary.json`; jobs in `p6b_jobs.json`; ours = P4c locked config):**
+
+| Model | Defense | Attack | seeds | undefended on x_adv | **defended** | gate defends |
+|:--|:--|:--|:--:|:--:|:--:|:--:|
+| clean | ours | PGD-50 (transfer, cached, 100 img) | 3 | 1.31 | **25.77 ± 0.49** | 1.00 |
+| clean | ours | SegPGD-50 (transfer, 100 img) | 3 | 0.99 | **26.86 ± 0.54** | 1.00 |
+| clean | ours | CosPGD-50 (transfer, 100 img) | 3 | 0.00 | **29.16 ± 0.60** | 1.00 |
+| clean | ours | random-noise control (100 img) | 1 | 52.75 | **52.02** | 0.07 |
+| clean | ours | BPDA-10 (50 img) | 1 | 7.21 | **9.77** | 1.00 |
+| clean | ours | BPDA-10 + EOT-4 (50 img) | 1 | 4.80 | **6.60** | 1.00 |
+| clean | ours | BPDA-50 (50 img) | 3 | 3.27 | **4.34 ± 0.30** | 1.00 |
+| clean | ours | BPDA-50, fixed defense seed (50 img) | 1 | 2.61 | **2.73** | 1.00 |
+| clean | ours | SegPGD-50 via BPDA (50 img) | 1 | 1.81 | **2.65** | 1.00 |
+| clean | ours | gate-aware BPDA-50, λ = 1 (50 img) | 3 | 3.28 | **3.67 ± 0.17** | 0.91 |
+| clean | ours | gate-aware BPDA-50, λ = 10 (50 img) | 3 | 5.61 | **5.66 ± 0.21** | 0.16 |
+| clean | original | SegPGD-50 / CosPGD-50 (transfer, 100 img) | 1 | 0.98 / 0.00 | **27.45 / 28.13** | — |
+| clean | original | random-noise control (100 img) | 1 | 51.13 | **33.86** | — |
+| clean | original | BPDA-10 (50 img) | 1 | 10.14 | **11.18** | — |
+| adv | ours | SegPGD-50 / CosPGD-50 (transfer, 100 img) | 3 | 23.33 / 22.17 | **26.42 ± 0.14 / 26.82 ± 0.09** | — |
+| adv | ours | random-noise control (100 img) | 1 | 51.04 | **50.02** | — |
+| adv | ours | BPDA-10 (50 img) | 1 | 27.90 | **26.35** | — |
+| adv | ours | BPDA-10 + EOT-4 (50 img) | 1 | 27.29 | **25.83** | — |
+| adv | ours | BPDA-50 (50 img) | 3 | 26.85 | **24.05 ± 0.12** | — |
+| adv | ours | BPDA-50, fixed defense seed (50 img) | 1 | 27.68 | **22.17** | — |
+| adv | ours | SegPGD-50 via BPDA (50 img) | 1 | 26.37 | **22.80** | — |
+| adv | original | SegPGD-50 / CosPGD-50 (transfer, 100 img) | 1 | 23.34 / 22.18 | **26.84 / 27.31** | — |
+| adv | original | random-noise control (100 img) | 1 | 51.14 | **43.80** | — |
+| adv | original | BPDA-10 (50 img) | 1 | 33.20 | **23.71** | — |
+
+Undefended model under its own strongest attack, same 50 images (`*_test100_n50_s0`): clean model 0.00 (CosPGD); adv model 22.40 (CosPGD; PGD 25.05, SegPGD 23.66).
+
+**Findings:**
+1. **Non-adaptive attacks (transfer): ours = original.** SegPGD 26.86 vs 27.45, CosPGD 29.16 vs 28.13 (clean model); 26.42 vs 26.84 and 26.82 vs 27.31 (adv). All within 1.5.
+2. **Random-noise control: the gate is quiet** (defends 7% of noisy images = its clean false-positive rate), so ours keeps 52.02 vs the original's 33.86 on the clean model. On the adv model (no gate) ours keeps 50.02 vs 43.80, from the smaller ε_v.
+3. **Like-for-like adaptive (BPDA-10): ours vs original −1.41 (clean model), +2.64 (adv).** Both within or above the 1.5 threshold. The original's 11.18 reproduces the paper's Table 2 (11.64).
+4. **Worst case over the adaptive attacks run (ours):** clean model **2.65** (SegPGD via BPDA) vs undefended 0.00. Adv model **22.17** (BPDA-50, fixed seed) vs the undefended adv-trained model's own worst case 22.40. **Under a strong adaptive attack, the test-time defense adds ~0 robustness on top of adversarial training, and ~2.7 mIoU on the clean model.** This is the main negative finding of P6.
+5. **Sanity checks pass:** white-box ≪ transfer (BPDA 4.34 vs PGD+def 25.77); more steps are stronger (BPDA-10 9.77 → BPDA-50 4.34); EOT is stronger (9.77 → 6.60); a fixed defense seed is stronger (4.34 → 2.73, adv 24.05 → 22.17), so the defense's randomness inflates robustness (Croce et al. 2022). On the adv model, "undefended on x_adv" > "defended" under BPDA: the perturbation is tuned to the purified input.
+6. **Gap:** the original defense was attacked only with BPDA-10 (85–100 s/img). A BPDA-50 run on 20 images per model (ours on the same 20) is queued to check whether the original also collapses under the stronger attack (the expectation from the P6a control).
+
 ---
 
 ## P7. Final runs, demo, write-up (Days 15–25)

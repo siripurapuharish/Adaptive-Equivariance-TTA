@@ -1,0 +1,418 @@
+{
+ "clean/ours/segpgd50": {
+  "undefended": [
+   1.054909377890328,
+   0.9506471901405442,
+   0.973743057825258
+  ],
+  "defended": [
+   26.75801188519743,
+   26.370905774169927,
+   27.437341694165053
+  ],
+  "defended_fraction": [
+   1.0,
+   1.0,
+   1.0
+  ]
+ },
+ "clean/ours/cospgd50": {
+  "undefended": [
+   0.0005038838619068313,
+   0.0,
+   6.187912107414055e-05
+  ],
+  "defended": [
+   29.754150018726776,
+   28.563126305361653,
+   29.169574664809296
+  ],
+  "defended_fraction": [
+   1.0,
+   1.0,
+   1.0
+  ]
+ },
+ "clean/ours/noise": {
+  "undefended": [
+   52.75483935839674
+  ],
+  "defended": [
+   52.02073746922784
+  ],
+  "defended_fraction": [
+   0.07
+  ]
+ },
+ "clean/ours/bpda10": {
+  "undefended": [
+   7.20999449640188
+  ],
+  "defended": [
+   9.770231752090082
+  ],
+  "defended_fraction": [
+   1.0
+  ]
+ },
+ "clean/ours/bpda50": {
+  "undefended": [
+   3.4144095245896753,
+   3.009477808822473,
+   3.3971453125625724
+  ],
+  "defended": [
+   4.572548831149013,
+   4.000728781630429,
+   4.450180659219829
+  ],
+  "defended_fraction": [
+   1.0,
+   1.0,
+   1.0
+  ]
+ },
+ "clean/ours/bpda10eot4": {
+  "undefended": [
+   4.801669230188444
+  ],
+  "defended": [
+   6.598932710119928
+  ],
+  "defended_fraction": [
+   1.0
+  ]
+ },
+ "clean/ours/bpda50fixed": {
+  "undefended": [
+   2.6114737374544146
+  ],
+  "defended": [
+   2.733728765997501
+  ],
+  "defended_fraction": [
+   1.0
+  ]
+ },
+ "clean/ours/segpgd50bpda": {
+  "undefended": [
+   1.8126855544096285
+  ],
+  "defended": [
+   2.65094753078701
+  ],
+  "defended_fraction": [
+   1.0
+  ]
+ },
+ "clean/ours/ce50_n50": {
+  "undefended": [
+   1.321830844129633
+  ],
+  "defended": [
+   23.706135143974556
+  ],
+  "defended_fraction": [
+   1.0
+  ]
+ },
+ "clean/ours/segpgd50_n50": {
+  "undefended": [
+   0.8621805996971772
+  ],
+  "defended": [
+   24.70385616340026
+  ],
+  "defended_fraction": [
+   1.0
+  ]
+ },
+ "clean/ours/cospgd50_n50": {
+  "undefended": [
+   3.3030151077959246e-05
+  ],
+  "defended": [
+   27.104263652110404
+  ],
+  "defended_fraction": [
+   1.0
+  ]
+ },
+ "clean/ours/gateaware_lam1": {
+  "undefended": [
+   3.1899320116056074,
+   3.2902683263055987,
+   3.358510303804969
+  ],
+  "defended": [
+   3.4770178913194845,
+   3.7612532105904273,
+   3.7655696869363244
+  ],
+  "defended_fraction": [
+   0.94,
+   0.9,
+   0.9
+  ]
+ },
+ "clean/ours/gateaware_lam10": {
+  "undefended": [
+   5.816552459767647,
+   5.40493636528038,
+   5.598350512938592
+  ],
+  "defended": [
+   5.882688847100622,
+   5.471493221041556,
+   5.618463986972982
+  ],
+  "defended_fraction": [
+   0.16,
+   0.2,
+   0.12
+  ]
+ },
+ "clean/ours/worst_adaptive": [
+  "segpgd50bpda",
+  2.65094753078701
+ ],
+ "clean/original/segpgd50": {
+  "undefended": [
+   0.9820843529356872
+  ],
+  "defended": [
+   27.447509973725108
+  ],
+  "defended_fraction": [
+   1.0
+  ]
+ },
+ "clean/original/cospgd50": {
+  "undefended": [
+   0.0007693902177068282
+  ],
+  "defended": [
+   28.128588990070643
+  ],
+  "defended_fraction": [
+   1.0
+  ]
+ },
+ "clean/original/noise": {
+  "undefended": [
+   51.13431918436392
+  ],
+  "defended": [
+   33.864195729475114
+  ],
+  "defended_fraction": [
+   1.0
+  ]
+ },
+ "clean/original/bpda10": {
+  "undefended": [
+   10.139656292790377
+  ],
+  "defended": [
+   11.18085376900417
+  ],
+  "defended_fraction": [
+   1.0
+  ]
+ },
+ "clean/original/worst_adaptive": [
+  "bpda10",
+  11.18085376900417
+ ],
+ "adv/ours/segpgd50": {
+  "undefended": [
+   23.326000172561354,
+   23.32427862054282,
+   23.332152182198744
+  ],
+  "defended": [
+   26.280445723946638,
+   26.56247863201784,
+   26.42530922150724
+  ],
+  "defended_fraction": [
+   1.0,
+   1.0,
+   1.0
+  ]
+ },
+ "adv/ours/cospgd50": {
+  "undefended": [
+   22.184407645112223,
+   22.16754635054753,
+   22.16221497664453
+  ],
+  "defended": [
+   26.75566567150785,
+   26.915833860173525,
+   26.7862251765637
+  ],
+  "defended_fraction": [
+   1.0,
+   1.0,
+   1.0
+  ]
+ },
+ "adv/ours/noise": {
+  "undefended": [
+   51.04241019119871
+  ],
+  "defended": [
+   50.01783234292852
+  ],
+  "defended_fraction": [
+   1.0
+  ]
+ },
+ "adv/ours/bpda10": {
+  "undefended": [
+   27.89740629329449
+  ],
+  "defended": [
+   26.348994381726897
+  ],
+  "defended_fraction": [
+   1.0
+  ]
+ },
+ "adv/ours/bpda50": {
+  "undefended": [
+   26.859790519197613,
+   26.80975232472486,
+   26.890820408190766
+  ],
+  "defended": [
+   23.98802502665424,
+   23.973858410401505,
+   24.195419891719595
+  ],
+  "defended_fraction": [
+   1.0,
+   1.0,
+   1.0
+  ]
+ },
+ "adv/ours/bpda10eot4": {
+  "undefended": [
+   27.28706596233065
+  ],
+  "defended": [
+   25.831554712613123
+  ],
+  "defended_fraction": [
+   1.0
+  ]
+ },
+ "adv/ours/bpda50fixed": {
+  "undefended": [
+   27.684757677437155
+  ],
+  "defended": [
+   22.1655076450166
+  ],
+  "defended_fraction": [
+   1.0
+  ]
+ },
+ "adv/ours/segpgd50bpda": {
+  "undefended": [
+   26.3693159648705
+  ],
+  "defended": [
+   22.800607074064175
+  ],
+  "defended_fraction": [
+   1.0
+  ]
+ },
+ "adv/ours/ce50_n50": {
+  "undefended": [
+   25.045924208010355
+  ],
+  "defended": [
+   26.440519756002697
+  ],
+  "defended_fraction": [
+   1.0
+  ]
+ },
+ "adv/ours/segpgd50_n50": {
+  "undefended": [
+   23.66024497364217
+  ],
+  "defended": [
+   26.00500332194861
+  ],
+  "defended_fraction": [
+   1.0
+  ]
+ },
+ "adv/ours/cospgd50_n50": {
+  "undefended": [
+   22.402677263571565
+  ],
+  "defended": [
+   26.334118508175212
+  ],
+  "defended_fraction": [
+   1.0
+  ]
+ },
+ "adv/ours/worst_adaptive": [
+  "bpda50fixed",
+  22.1655076450166
+ ],
+ "adv/original/segpgd50": {
+  "undefended": [
+   23.335386794550846
+  ],
+  "defended": [
+   26.837768923971243
+  ],
+  "defended_fraction": [
+   1.0
+  ]
+ },
+ "adv/original/cospgd50": {
+  "undefended": [
+   22.184299457968525
+  ],
+  "defended": [
+   27.306429689399057
+  ],
+  "defended_fraction": [
+   1.0
+  ]
+ },
+ "adv/original/noise": {
+  "undefended": [
+   51.1365876949202
+  ],
+  "defended": [
+   43.80104615613384
+  ],
+  "defended_fraction": [
+   1.0
+  ]
+ },
+ "adv/original/bpda10": {
+  "undefended": [
+   33.19690685027613
+  ],
+  "defended": [
+   23.71190949735799
+  ],
+  "defended_fraction": [
+   1.0
+  ]
+ },
+ "adv/original/worst_adaptive": [
+  "bpda10",
+  23.71190949735799
+ ]
+}

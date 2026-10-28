@@ -1,0 +1,289 @@
+{
+ "config": {
+  "model": "adv",
+  "target": "original",
+  "loss": "ce",
+  "through": "bpda",
+  "steps": 10,
+  "eot": 1,
+  "fixed_seed": false,
+  "split": "test100",
+  "limit": 50,
+  "seed": 0,
+  "batch_size": 2,
+  "tag": "bpda10",
+  "preset": {
+   "ckpt": "checkpoints/advtrain_drn_d_22_cityscapes.pth.tar",
+   "eps_v": 0.0392156862745098,
+   "num_views": 9
+  },
+  "eps_v": 0.0392156862745098,
+  "def_opts": {
+   "target": "original"
+  },
+  "attack": {
+   "eps": 0.01568627450980392,
+   "step": 0.00392156862745098
+  },
+  "git": "456ebe5"
+ },
+ "results": {
+  "undefended": 33.19690685027613,
+  "defended": 23.71190949735799,
+  "defended_fraction": 1.0,
+  "mean_eps_frac": 1.0,
+  "sec_per_image": 99.92207448959351,
+  "per_image": [
+   {
+    "defended": true,
+    "mean_eps_frac": 1.0,
+    "score": NaN
+   },
+   {
+    "defended": true,
+    "mean_eps_frac": 1.0,
+    "score": NaN
+   },
+   {
+    "defended": true,
+    "mean_eps_frac": 1.0,
+    "score": NaN
+   },
+   {
+    "defended": true,
+    "mean_eps_frac": 1.0,
+    "score": NaN
+   },
+   {
+    "defended": true,
+    "mean_eps_frac": 1.0,
+    "score": NaN
+   },
+   {
+    "defended": true,
+    "mean_eps_frac": 1.0,
+    "score": NaN
+   },
+   {
+    "defended": true,
+    "mean_eps_frac": 1.0,
+    "score": NaN
+   },
+   {
+    "defended": true,
+    "mean_eps_frac": 1.0,
+    "score": NaN
+   },
+   {
+    "defended": true,
+    "mean_eps_frac": 1.0,
+    "score": NaN
+   },
+   {
+    "defended": true,
+    "mean_eps_frac": 1.0,
+    "score": NaN
+   },
+   {
+    "defended": true,
+    "mean_eps_frac": 1.0,
+    "score": NaN
+   },
+   {
+    "defended": true,
+    "mean_eps_frac": 1.0,
+    "score": NaN
+   },
+   {
+    "defended": true,
+    "mean_eps_frac": 1.0,
+    "score": NaN
+   },
+   {
+    "defended": true,
+    "mean_eps_frac": 1.0,
+    "score": NaN
+   },
+   {
+    "defended": true,
+    "mean_eps_frac": 1.0,
+    "score": NaN
+   },
+   {
+    "defended": true,
+    "mean_eps_frac": 1.0,
+    "score": NaN
+   },
+   {
+    "defended": true,
+    "mean_eps_frac": 1.0,
+    "score": NaN
+   },
+   {
+    "defended": true,
+    "mean_eps_frac": 1.0,
+    "score": NaN
+   },
+   {
+    "defended": true,
+    "mean_eps_frac": 1.0,
+    "score": NaN
+   },
+   {
+    "defended": true,
+    "mean_eps_frac": 1.0,
+    "score": NaN
+   },
+   {
+    "defended": true,
+    "mean_eps_frac": 1.0,
+    "score": NaN
+   },
+   {
+    "defended": true,
+    "mean_eps_frac": 1.0,
+    "score": NaN
+   },
+   {
+    "defended": true,
+    "mean_eps_frac": 1.0,
+    "score": NaN
+   },
+   {
+    "defended": true,
+    "mean_eps_frac": 1.0,
+    "score": NaN
+   },
+   {
+    "defended": true,
+    "mean_eps_frac": 1.0,
+    "score": NaN
+   },
+   {
+    "defended": true,
+    "mean_eps_frac": 1.0,
+    "score": NaN
+   },
+   {
+    "defended": true,
+    "mean_eps_frac": 1.0,
+    "score": NaN
+   },
+   {
+    "defended": true,
+    "mean_eps_frac": 1.0,
+    "score": NaN
+   },
+   {
+    "defended": true,
+    "mean_eps_frac": 1.0,
+    "score": NaN
+   },
+   {
+    "defended": true,
+    "mean_eps_frac": 1.0,
+    "score": NaN
+   },
+   {
+    "defended": true,
+    "mean_eps_frac": 1.0,
+    "score": NaN
+   },
+   {
+    "defended": true,
+    "mean_eps_frac": 1.0,
+    "score": NaN
+   },
+   {
+    "defended": true,
+    "mean_eps_frac": 1.0,
+    "score": NaN
+   },
+   {
+    "defended": true,
+    "mean_eps_frac": 1.0,
+    "score": NaN
+   },
+   {
+    "defended": true,
+    "mean_eps_frac": 1.0,
+    "score": NaN
+   },
+   {
+    "defended": true,
+    "mean_eps_frac": 1.0,
+    "score": NaN
+   },
+   {
+    "defended": true,
+    "mean_eps_frac": 1.0,
+    "score": NaN
+   },
+   {
+    "defended": true,
+    "mean_eps_frac": 1.0,
+    "score": NaN
+   },
+   {
+    "defended": true,
+    "mean_eps_frac": 1.0,
+    "score": NaN
+   },
+   {
+    "defended": true,
+    "mean_eps_frac": 1.0,
+    "score": NaN
+   },
+   {
+    "defended": true,
+    "mean_eps_frac": 1.0,
+    "score": NaN
+   },
+   {
+    "defended": true,
+    "mean_eps_frac": 1.0,
+    "score": NaN
+   },
+   {
+    "defended": true,
+    "mean_eps_frac": 1.0,
+    "score": NaN
+   },
+   {
+    "defended": true,
+    "mean_eps_frac": 1.0,
+    "score": NaN
+   },
+   {
+    "defended": true,
+    "mean_eps_frac": 1.0,
+    "score": NaN
+   },
+   {
+    "defended": true,
+    "mean_eps_frac": 1.0,
+    "score": NaN
+   },
+   {
+    "defended": true,
+    "mean_eps_frac": 1.0,
+    "score": NaN
+   },
+   {
+    "defended": true,
+    "mean_eps_frac": 1.0,
+    "score": NaN
+   },
+   {
+    "defended": true,
+    "mean_eps_frac": 1.0,
+    "score": NaN
+   },
+   {
+    "defended": true,
+    "mean_eps_frac": 1.0,
+    "score": NaN
+   }
+  ]
+ }
+}

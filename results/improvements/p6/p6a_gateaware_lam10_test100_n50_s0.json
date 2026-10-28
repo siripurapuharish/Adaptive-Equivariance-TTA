@@ -1,0 +1,291 @@
+{
+ "config": {
+  "model": "clean",
+  "split": "test100",
+  "limit": 50,
+  "seed": 0,
+  "lams": [
+   10.0
+  ],
+  "steps": 50,
+  "eps_v": 6.0,
+  "def_opts": "{\"mode\": \"gate+perimage\", \"view_set\": \"up1.5\"}",
+  "batch_size": 2,
+  "target": "adaptive",
+  "tag": "gateaware_lam10",
+  "preset": {
+   "ckpt": "checkpoints/clean_drn_d_22_cityscapes.pth",
+   "eps_v": 0.023529411764705882,
+   "num_views": 7
+  },
+  "tau": 0.26606629192829123,
+  "attack": {
+   "eps": 0.01568627450980392,
+   "step": 0.00392156862745098
+  },
+  "git": "456ebe5"
+ },
+ "results": {
+  "10": {
+   "undefended": 5.816552459767647,
+   "pipeline": 5.882688847100622,
+   "always_on": 19.218343171818333,
+   "defended_fraction": 0.16,
+   "mean_eps_frac": 0.05871641755104065,
+   "mean_score": 0.26213362723588945,
+   "sec_per_image": 10.561503534317017,
+   "per_image": [
+    {
+     "score": 0.22188839316368103,
+     "defended": false,
+     "mean_eps_frac": 0.0
+    },
+    {
+     "score": 0.24410971999168396,
+     "defended": false,
+     "mean_eps_frac": 0.0
+    },
+    {
+     "score": 0.2298768013715744,
+     "defended": false,
+     "mean_eps_frac": 0.0
+    },
+    {
+     "score": 0.2368379384279251,
+     "defended": false,
+     "mean_eps_frac": 0.0
+    },
+    {
+     "score": 0.26216039061546326,
+     "defended": false,
+     "mean_eps_frac": 0.0
+    },
+    {
+     "score": 0.26006874442100525,
+     "defended": false,
+     "mean_eps_frac": 0.0
+    },
+    {
+     "score": 0.25929006934165955,
+     "defended": false,
+     "mean_eps_frac": 0.0
+    },
+    {
+     "score": 0.1873076856136322,
+     "defended": false,
+     "mean_eps_frac": 0.0
+    },
+    {
+     "score": 0.24607689678668976,
+     "defended": false,
+     "mean_eps_frac": 0.0
+    },
+    {
+     "score": 0.26538902521133423,
+     "defended": false,
+     "mean_eps_frac": 0.0
+    },
+    {
+     "score": 0.2961060106754303,
+     "defended": true,
+     "mean_eps_frac": 0.311576783657074
+    },
+    {
+     "score": 0.31918227672576904,
+     "defended": true,
+     "mean_eps_frac": 0.32284849882125854
+    },
+    {
+     "score": 0.2614838778972626,
+     "defended": false,
+     "mean_eps_frac": 0.0
+    },
+    {
+     "score": 0.2529071271419525,
+     "defended": false,
+     "mean_eps_frac": 0.0
+    },
+    {
+     "score": 0.22195713222026825,
+     "defended": false,
+     "mean_eps_frac": 0.0
+    },
+    {
+     "score": 0.25120076537132263,
+     "defended": false,
+     "mean_eps_frac": 0.0
+    },
+    {
+     "score": 0.5502115488052368,
+     "defended": true,
+     "mean_eps_frac": 0.4485905170440674
+    },
+    {
+     "score": 0.26417863368988037,
+     "defended": false,
+     "mean_eps_frac": 0.0
+    },
+    {
+     "score": 0.374149888753891,
+     "defended": true,
+     "mean_eps_frac": 0.3564646244049072
+    },
+    {
+     "score": 0.2542591989040375,
+     "defended": false,
+     "mean_eps_frac": 0.0
+    },
+    {
+     "score": 0.5089889168739319,
+     "defended": true,
+     "mean_eps_frac": 0.4146042764186859
+    },
+    {
+     "score": 0.2447667419910431,
+     "defended": false,
+     "mean_eps_frac": 0.0
+    },
+    {
+     "score": 0.18531465530395508,
+     "defended": false,
+     "mean_eps_frac": 0.0
+    },
+    {
+     "score": 0.20369236171245575,
+     "defended": false,
+     "mean_eps_frac": 0.0
+    },
+    {
+     "score": 0.2406303435564041,
+     "defended": false,
+     "mean_eps_frac": 0.0
+    },
+    {
+     "score": 0.217568039894104,
+     "defended": false,
+     "mean_eps_frac": 0.0
+    },
+    {
+     "score": 0.17383572459220886,
+     "defended": false,
+     "mean_eps_frac": 0.0
+    },
+    {
+     "score": 0.09763316810131073,
+     "defended": false,
+     "mean_eps_frac": 0.0
+    },
+    {
+     "score": 0.2649153172969818,
+     "defended": false,
+     "mean_eps_frac": 0.0
+    },
+    {
+     "score": 0.3163396716117859,
+     "defended": true,
+     "mean_eps_frac": 0.306138277053833
+    },
+    {
+     "score": 0.2509543001651764,
+     "defended": false,
+     "mean_eps_frac": 0.0
+    },
+    {
+     "score": 0.17061187326908112,
+     "defended": false,
+     "mean_eps_frac": 0.0
+    },
+    {
+     "score": 0.2554483711719513,
+     "defended": false,
+     "mean_eps_frac": 0.0
+    },
+    {
+     "score": 0.26174408197402954,
+     "defended": false,
+     "mean_eps_frac": 0.0
+    },
+    {
+     "score": 0.2389361709356308,
+     "defended": false,
+     "mean_eps_frac": 0.0
+    },
+    {
+     "score": 0.5338482856750488,
+     "defended": true,
+     "mean_eps_frac": 0.4378216862678528
+    },
+    {
+     "score": 0.21920473873615265,
+     "defended": false,
+     "mean_eps_frac": 0.0
+    },
+    {
+     "score": 0.2535191476345062,
+     "defended": false,
+     "mean_eps_frac": 0.0
+    },
+    {
+     "score": 0.3890112042427063,
+     "defended": true,
+     "mean_eps_frac": 0.33777621388435364
+    },
+    {
+     "score": 0.25637713074684143,
+     "defended": false,
+     "mean_eps_frac": 0.0
+    },
+    {
+     "score": 0.22925443947315216,
+     "defended": false,
+     "mean_eps_frac": 0.0
+    },
+    {
+     "score": 0.23898562788963318,
+     "defended": false,
+     "mean_eps_frac": 0.0
+    },
+    {
+     "score": 0.23282647132873535,
+     "defended": false,
+     "mean_eps_frac": 0.0
+    },
+    {
+     "score": 0.23879383504390717,
+     "defended": false,
+     "mean_eps_frac": 0.0
+    },
+    {
+     "score": 0.25929930806159973,
+     "defended": false,
+     "mean_eps_frac": 0.0
+    },
+    {
+     "score": 0.25232571363449097,
+     "defended": false,
+     "mean_eps_frac": 0.0
+    },
+    {
+     "score": 0.1806582808494568,
+     "defended": false,
+     "mean_eps_frac": 0.0
+    },
+    {
+     "score": 0.2238510251045227,
+     "defended": false,
+     "mean_eps_frac": 0.0
+    },
+    {
+     "score": 0.2439262419939041,
+     "defended": false,
+     "mean_eps_frac": 0.0
+    },
+    {
+     "score": 0.2647780478000641,
+     "defended": false,
+     "mean_eps_frac": 0.0
+    }
+   ]
+  }
+ }
+}
