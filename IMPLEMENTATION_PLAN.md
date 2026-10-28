@@ -609,7 +609,14 @@ Undefended model under its own strongest attack, same 50 images (`*_test100_n50_
 3. **Like-for-like adaptive (BPDA-10): ours vs original −1.41 (clean model), +2.64 (adv).** Both within or above the 1.5 threshold. The original's 11.18 reproduces the paper's Table 2 (11.64).
 4. **Worst case over the adaptive attacks run (ours):** clean model **2.65** (SegPGD via BPDA) vs undefended 0.00. Adv model **22.17** (BPDA-50, fixed seed) vs the undefended adv-trained model's own worst case 22.40. **Under a strong adaptive attack, the test-time defense adds ~0 robustness on top of adversarial training, and ~2.7 mIoU on the clean model.** This is the main negative finding of P6.
 5. **Sanity checks pass:** white-box ≪ transfer (BPDA 4.34 vs PGD+def 25.77); more steps are stronger (BPDA-10 9.77 → BPDA-50 4.34); EOT is stronger (9.77 → 6.60); a fixed defense seed is stronger (4.34 → 2.73, adv 24.05 → 22.17), so the defense's randomness inflates robustness (Croce et al. 2022). On the adv model, "undefended on x_adv" > "defended" under BPDA: the perturbation is tuned to the purified input.
-6. **Gap:** the original defense was attacked only with BPDA-10 (85–100 s/img). A BPDA-50 run on 20 images per model (ours on the same 20) is queued to check whether the original also collapses under the stronger attack (the expectation from the P6a control).
+6. **Gap closed: BPDA-50 on the original (2026-10-28; first 20 test100 images, seed 0; `p6b_bpda50_{ours,original}_{clean,adv}_test100_n20_s0.json`; 378–445 s/img for the original vs 15–19 for ours):**
+
+   | Model | ours | original | Δ (ours − original) |
+   |:--|:--:|:--:|:--:|
+   | clean | 4.01 | 5.78 | −1.77 |
+   | adv | 25.79 | 21.88 | +3.91 |
+
+   **The original collapses too** (clean 11.18 under BPDA-10 → 5.78 under BPDA-50). The defense family is broken by a stronger BPDA, not our faster version. The clean-model gap (−1.77, 20 images, 1 seed) is just past the 1.5 threshold and on few images. Report it as "slightly weaker, within the noise of a 20-image run". On the adv model ours is better by 3.9, from the smaller ε_v (less to exploit). **Thesis line: the paper's BPDA-10 evaluation overstates the defense; at 50 steps the upstream defense drops by about half (clean model) and falls below the undefended adv-trained model.**
 
 ---
 

@@ -20,10 +20,10 @@ NAMES = {"segpgd50": "SegPGD-50 (transfer, 100 img)", "cospgd50": "CosPGD-50 (tr
          "bpda10eot4": "BPDA-10 + EOT-4 (50 img)", "bpda50fixed": "BPDA-50, fixed defense seed (50 img)",
          "segpgd50bpda": "SegPGD-50 via BPDA (50 img)",
          "ce50_n50": "PGD-50 (transfer, same 50 img)", "segpgd50_n50": "SegPGD-50 (transfer, same 50 img)",
-         "cospgd50_n50": "CosPGD-50 (transfer, same 50 img)",
+         "cospgd50_n50": "CosPGD-50 (transfer, same 50 img)", "bpda50_n20": "BPDA-50 (first 20 img)",
          "gateaware_lam1": "gate-aware BPDA-50, λ = 1 (50 img)", "gateaware_lam10": "gate-aware BPDA-50, λ = 10 (50 img)"}
 TRANSFER = {"ce50", "segpgd50", "cospgd50"}
-ADAPTIVE = {"bpda10", "bpda50", "bpda10eot4", "bpda50fixed", "segpgd50bpda", "gateaware_lam1", "gateaware_lam10"}
+ADAPTIVE = {"bpda10", "bpda50", "bpda50_n20", "bpda10eot4", "bpda50fixed", "segpgd50bpda", "gateaware_lam1", "gateaware_lam10"}
 
 
 def fmt(v):
@@ -37,7 +37,8 @@ def main():
         if not m or m.group(1) == "equivcheck":
             continue
         tag = m.group(1)
-        if m.group(4) and tag in TRANSFER:      # transfer attacks re-run on the 50-image subset
+        # transfer attacks re-run on the 50-image subset, and the 20-image BPDA-50 runs, are kept apart
+        if m.group(4) and (tag in TRANSFER or m.group(4) != "_n50"):
             tag += m.group(4)
         r = json.load(open(f))["results"]
         k = (m.group(3), m.group(2), tag)
