@@ -584,6 +584,22 @@ Each is applied to every image after ours (gated-out images too, so the pipeline
 
 **Done when:** we know whether it adds mIoU on clean and attacked inputs. If it adds nothing, report that and drop it.
 
+**Outcome (2026-10-28; tune100, seeds 0–2, ours = P4c config with `up1.5`; `python -m equi_lib.e2_analyze` → `results/improvements/e2/e2_decision_tune100.json`; paired Δ vs `single`):**
+
+| Model | Variant | clean (no def) | PGD (no def) | clean+def | PGD+def | predict s/img |
+|:--|:--|:--:|:--:|:--:|:--:|:--:|
+| clean | single | 52.14 | 1.15 | 51.96 ± 0.06 | 25.38 ± 0.46 | 0.040 |
+| clean | avg_flip | 53.01 (+0.87) | 1.33 (+0.17) | 52.84 (+0.88) | 27.75 (**+2.38**) | 0.069 |
+| clean | **avg_rs** | 53.25 (+1.11) | 1.99 (+0.84) | 53.09 (+1.13) | 29.07 (**+3.69**) | 0.134 |
+| adv | single | 48.13 | 25.95 | 47.02 ± 0.32 | 28.14 ± 0.14 | 0.040 |
+| adv | avg_flip | 48.45 (+0.32) | 27.84 (+1.89) | 47.43 (+0.41) | 29.64 (+1.50) | 0.073 |
+| adv | **avg_rs** | 47.88 (−0.25) | 29.00 (+3.05) | 46.81 (−0.22) | 30.36 (**+2.22**) | 0.139 |
+
+- **Rule: adopt `avg_rs` on both models** (best PGD+def among the qualifying variants), as a v2 candidate. It costs ~0.1 s/img.
+- **Clean model: the gain needs the defense.** Averaging alone barely helps the undefended model under PGD (1.15 → 1.99), but after the defense it adds +3.69. So the defense and the averaging work together: the purified image is close enough to correct that the views vote the remaining errors away.
+- **Adv model: the gain is mostly plain test-time augmentation.** Averaging alone adds +3.05 to the undefended model under PGD, and +2.22 after the defense. Report it as such and cite the input-transformation defenses (Guo et al. 2018; Xie et al. 2018).
+- **Caveat (decisive):** the averaging is differentiable, and input-transformation defenses are known to fall to attacks that differentiate through them, with EOT for random ones (Athalye et al. 2018). The v2 BPDA-50 re-check attacks through the averaging exactly (identity backward only through the purifier) before any claim is made.
+
 ---
 
 ## P5b. Does restored equivariance mean restored correctness? (added 2026-10-28, days 4–5)
