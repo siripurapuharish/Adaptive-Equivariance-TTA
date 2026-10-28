@@ -641,7 +641,7 @@ Image AUROC of the held-out error, attacked vs clean: clean model PGD 0.950, **B
 - **Open caveat (E3b below):** this BPDA attacker did not know about the self-check.
 
 **E3b. Self-check-aware attack (pre-registered 2026-10-28, before running):**
-- BPDA-50 through ours (as in E3), with the objective CE(defended) − λ · (held-out error of x_def), λ ∈ {1, 10}. The held-out error is differentiated exactly through its forward passes; the purifier uses the identity backward.
+- BPDA-50 through ours (as in E3), with the objective CE(defended) − λ · (held-out error of x_def), λ ∈ {1, 10, 100} (100 added before any run, since P6a needed large λ to evade the gate). The held-out error is differentiated exactly through its forward passes; the purifier uses the identity backward.
 - Clean model, the same 50 test100 images, seed 0. Report defended mIoU, held-out error, and the image AUROC vs clean.
 - **Reading:** "self-check survives" if, at every λ, either the AUROC vs clean stays ≥ 0.90 or evading it costs the attacker ≥ 5 mIoU of damage (defended mIoU ≥ BPDA-50's 4.39 + 5). This is the same evasion-cost logic as P6a.
 
