@@ -3,7 +3,25 @@
 Created 2026-10-26. Deadline: about 2026-11-24. **Compressed to a 25-day schedule on 2026-10-26** (day 1 = 2026-10-26, day 25 = 2026-11-19, leaving 5 days of slack before the deadline).
 Background facts, configs and baselines are in `REPRODUCTION_REFERENCE.md`. The literature research behind the 25-day changes is in `reports/Equivariance defense improvement ideas.md`.
 
-### Schedule at a glance (re-planned 2026-10-27, after P4)
+### Schedule at a glance (re-planned 2026-10-28, after P6b)
+
+P0–P6b finished by day 3 (2026-10-28). Under a strong adaptive attack the defense family (ours and the original) adds about 0 mIoU on the adv-trained model and about 2.7 on the clean model (P6b "Findings"). The remaining days go to the open question this raises (P5b), the optional P5, the final runs and the write-up. The leads from the Consensus literature summary (`reports/plan_additions_consensus_2026-10-28.md`, citations unverified) are folded in as A1 (P6b), P5b and the P7 future-work list.
+
+| Day | Date | Phase | Work |
+|:--:|:--|:--|:--|
+| 1–3 | Oct 26–28 | P0–P6b | **Done** |
+| 4 | Oct 29 | P5b | B1 proxy analysis (both models; clean, PGD-50 and BPDA-50 inputs) and D1 view redundancy. Show the guide the reframing and the P6b result |
+| 5 | Oct 30 | P5 / M5 / A1 | P5 view averaging on `tune100` (optional). M5 only if B1 passes. A1 attack-setting sweep (optional) |
+| 6 | Oct 31 | confirm | `test100` 3 seeds for anything adopted on day 5; otherwise buffer |
+| 7–8 | Nov 1–2 | P7 | `full500` runs of the final configs and the original (overnight) |
+| 9 | Nov 3 | P7 | Gradio demo |
+| 10–17 | Nov 4–11 | P7 | Thesis |
+| 18–20 | Nov 12–14 | P7 | Slides |
+| 21–25 | Nov 15–19 | — | Buffer (deadline Nov 24) |
+
+**Cut order if we slip (2026-10-28):** M5, then A1, then D1, then P5. **Never cut:** B1 (cheap; answers the base paper's open question), the `full500` runs, the negative results.
+
+### Earlier schedule (re-planned 2026-10-27, after P4; kept for the record)
 
 P0–P4 finished on day 2 (2026-10-27), well ahead of the 25-day plan. The per-pixel placement claim failed its pre-registered test (P4 outcome below), so the remaining days were re-planned around what worked: **image-level adaptation driven by the equivariance signal**. The re-plan also folds in the four improvements proposed in the mid-review slides (`Harish_midreview.pdf`); see the section "Mid-review improvements (M1–M4)" after P4.
 
@@ -480,6 +498,42 @@ After the defense, predict on the restored image and its views, map each predict
 
 ---
 
+## P5b. Does restored equivariance mean restored correctness? (added 2026-10-28, days 4–5)
+
+**Why:** Mao et al. assume that restoring equivariance restores the prediction, and leave open whether that holds under strong adaptive attacks (the Consensus summary names it as the main open question). P6b shows the defense fails under BPDA-50. The question is now: **is the failure visible?** If the restored image still shows high equivariance error on a view the defense never optimised, the system can at least flag its own failures. If not, the attack restores equivariance without restoring correctness, which is a direct counterexample to the paper's premise. Either outcome is a finding.
+
+**B1. Held-out proxy analysis** (forward passes only):
+- **Held-out views**, never optimised by the defense:
+  - Clean model (7 views: resizes 2× (1.5× in `up1.5`), 0.3×, 0.5×, and two rotations): horizontal flip, and resize 0.75×.
+  - Adv model (9 views, which include a flip): resize 0.75×.
+  - The gate's 0.5× view is *not* held out (the defense has a 0.5× view, cnt 3).
+- **Per image, after the defense:** the held-out consistency error (softmax L2 to the base output, as in `consistency_map`) and the image's own mIoU and pixel accuracy.
+- **Inputs:** clean, PGD-50 (cached) and BPDA-50 on 50 test100 images, seed 0, ours (P4c config). Check whether `p6b_attacks.py` saves x_adv; if not, regenerate (~15–19 s/img).
+- **Report:**
+  - The Spearman ρ between the held-out error and per-image mIoU, per input type and pooled.
+  - The pixel-level AUROC of the held-out error for "defended prediction wrong".
+  - Mean held-out error per input type: does BPDA-50 leave it high, like PGD, or low, like clean?
+- **Pre-registered reading:**
+  - "Proxy holds" on an input type if ρ ≤ −0.5 and the pixel AUROC is ≥ 0.80.
+  - "Failure visible under BPDA" if the image-level AUROC of the held-out error for BPDA-50 vs clean is ≥ 0.90.
+  - Caveat to state: an attacker can add a held-out-error term (as λ did for the gate in P6a), so visibility is again a matter of evasion cost, not a guarantee.
+
+**M5 (optional, cut first): held-out-view budget selection.** Only if B1 shows the proxy holds under PGD-50 on the clean model.
+- For each image the gate lets through, run `one_step` at ε ∈ {ε_v/2, ε_v} and keep the result with the lower held-out error (B1 views). This costs about 2× the defense time on gated images.
+- Compare against the locked `gate+perimage` on `tune100`, 3 seeds.
+- **Pre-registered rule:** adopt only if it beats `gate+perimage` by > 1.5 on PGD+def or clean+def, losing ≤ 1.5 on the other, **and** it is not > 1.5 worse under the P6a gate-aware BPDA attack (λ = 1, 50 images).
+- **Known risk:** choosing among candidates by a loss is the pattern that broke SOAP (Croce et al. 2022). A negative result is reported as a confirmation of Croce et al.
+
+**D1 (optional): view redundancy.** Mao's theorem says added constraints help only if they carry new information about the label.
+- On 10 tune100 images (both models, clean and PGD inputs), compute each view's equivariance-loss gradient w.r.t. δ at the `one_step` start point.
+- Report the pairwise cosine and the sign agreement (`one_step` uses only the sign).
+- **Use:** explain M1. Near-duplicate 2× views would explain why `up1.5` = `full`. `no_up` failing on the clean model would mean the upscale direction carries information the downscale views don't.
+- Minutes of GPU time.
+
+**Done when:** the B1 table is filled and its reading recorded. M5 and D1 are reported if they were run.
+
+---
+
 ## P6a. Gate-aware adaptive attack (Days 4–5, moved forward on 2026-10-27)
 
 **Why first:** the main result works by giving attacked images a large budget and clean images almost none. An attacker who keeps the consistency score s(x+δ) low gets past the gate, and the undefended clean model drops to about 1 mIoU. This decides the thesis claim, so it runs **before** the test100 confirmation and the slides.
@@ -566,6 +620,7 @@ Attack the **final system** (P4c config, + P5 if adopted) and the **original def
 - Report results **with and without EOT**: the injected randomness can inflate robustness, so a cleaner optimiser may look worse under EOT.
 - Sanity checks: attack-steps and ε curves should reach near 0 at large ε; white-box should beat transfer; add a random-noise control.
 - Optional if time remains: a reduced SEA (APGD over masked CE and JS losses, 100 iterations, via BPDA). No test-time segmentation defense has been evaluated with SEA.
+- **A1 (added 2026-10-28, optional; Consensus summary → Lee & Kim 2023, to verify):** purification robustness depends on the attack's settings. BPDA-50 against ours, clean model, 50 test100 images, seed 0: step sizes 0.5, 1 and 2/255, plus 3 random restarts (keep the most damaging per image). Report the minimum as the BPDA-50 number. If it is > 1.5 below the default, re-run the 3-seed row with that setting. It can only lower our numbers; the P6b conclusion already stands without it. APGD-CE through BPDA (Croce & Hein 2020) was considered and dropped for the same reason: a stronger attack can't change "≈ 0 / ≈ 2.7".
 - The gate-aware attack is essential: the main idea relies on e, so lecturers will ask whether an attacker can fake a low error. It runs first (P6a); this phase repeats it on test100 against the locked config.
 - If it breaks the gate, report that honestly and show how much the budget floor (P6a) still holds.
 - If M1 adopted a reduced view set, also run BPDA-10 on it (fewer views could be easier to attack).
@@ -640,6 +695,12 @@ Undefended model under its own strongest attack, same 50 images (`*_test100_n50_
   - other datasets (ImageNet, VOC, COCO) and backbones
   - restart selection by lowest loss (SOAP did this and was broken)
   - diffusion priors, certification, patch attacks
+  - added 2026-10-28 from the Consensus summary (verify each source first):
+    - a learned one-step initialiser for the repair (amortisation; Lee 2023, Bi 2024)
+    - feature-space or dual-domain repair (Wang 2025, Su 2026)
+    - equivariance-preserving randomized smoothing for certified robustness (Schuchardt et al. 2023)
+    - per-input transform policies (Kim et al. 2020)
+- **Citation rule (2026-10-28):** every source taken from the Consensus summary (`reports/consensus_summary_2026-10-28.md`) is checked against the paper itself (title, authors, venue, the claim attributed to it) before it goes into the thesis. Several (Mittal 2026, Su 2026, Krumtunger 2026, Wesego 2026) could not be checked when the summary was received.
 
 ---
 
