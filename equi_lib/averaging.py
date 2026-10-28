@@ -24,9 +24,9 @@ def _logp(model, normalize, x, out_hw):
     return align_output(model(normalize(x))[0], out_hw)
 
 
-@torch.no_grad()
-def predict(model, normalize, x, variant="single", out_hw=None):
-    """Returns the mean log-softmax [B, 19, H, W] at out_hw (default: x's size); ConfusionMeter takes its argmax."""
+def predict_logp(model, normalize, x, variant="single", out_hw=None):
+    """Mean log-softmax [B, 19, H, W] at out_hw (default: x's size). Differentiable: attacks use it to go through
+    the averaging exactly (v2 BPDA re-check)."""
     if variant not in VARIANTS:
         raise ValueError(f"variant {variant!r} not in {tuple(VARIANTS)}")
     out_hw = tuple(out_hw or x.shape[-2:])
@@ -38,3 +38,9 @@ def predict(model, normalize, x, variant="single", out_hw=None):
             xs = F.interpolate(x, size=(int(x.size(2) * v), int(x.size(3) * v)), mode="bilinear", align_corners=False)
             p = p + _logp(model, normalize, xs, out_hw)
     return p / (1 + len(VARIANTS[variant]))
+
+
+@torch.no_grad()
+def predict(model, normalize, x, variant="single", out_hw=None):
+    """No-grad predict_logp, for evaluation; ConfusionMeter takes its argmax."""
+    return predict_logp(model, normalize, x, variant, out_hw)

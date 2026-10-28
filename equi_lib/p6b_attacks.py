@@ -29,6 +29,8 @@ import torch.nn.functional as F
 
 from . import RESULTS_DIR, ROOT_DIR
 from .adaptive import AdaptiveDefense
+from .averaging import VARIANTS as PREDICT_VARIANTS
+from .averaging import predict_logp
 from .data import load_batch, split_indices
 from .metrics import ConfusionMeter, align_output
 from .model import PRESETS, Normalizer, load_model
@@ -88,7 +90,9 @@ class Defended:
         return out
 
 
-def attack(model, norm, dfd, x, y, loss, through, steps, eot, eps, step):
+def attack(model, norm, dfd, x, y, loss, through, steps, eot, eps, step, predict="single"):
+    """predict (v2): the prediction the attacker differentiates through; 'single' is the plain model output,
+    the averaging variants go through equi_lib.averaging exactly (it has no randomness, so no EOT is needed)."""
     x = x.detach()
     if loss == "noise":
         d = eps * torch.randint(0, 2, x.shape, device=x.device, dtype=x.dtype).mul(2).sub(1)
@@ -100,13 +104,13 @@ def attack(model, norm, dfd, x, y, loss, through, steps, eot, eps, step):
     def objective(delta, t):
         xa = x + delta
         if through == "none":
-            logp = align_output(model(norm(xa))[0], y.shape[-2:])
+            logp = predict_logp(model, norm, xa, predict, y.shape[-2:])
             return pixel_loss(logp, y, loss, t, steps), None
         obj, sel = 0.0, 0.0
         for _ in range(eot):
             out = dfd(xa, y)
             xd = xa + (out - xa).detach()
-            logp = align_output(model(norm(xd))[0], y.shape[-2:])
+            logp = predict_logp(model, norm, xd, predict, y.shape[-2:])
             obj = obj + pixel_loss(logp, y, loss, t, steps) / eot
             sel = sel + ce_per_image(logp, y).detach() / eot
         return obj, sel
@@ -145,6 +149,8 @@ def main():
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--batch-size", type=int, default=2)
     ap.add_argument("--tag", required=True)
+    ap.add_argument("--predict", default="single", choices=sorted(PREDICT_VARIANTS),
+                    help="v2: prediction averaging (equi_lib.averaging) used by the attacker and the evaluation")
     args = ap.parse_args()
     if args.through == "none" and (args.eot > 1 or args.fixed_seed):
         ap.error("--eot / --fixed-seed only make sense with --through bpda")
@@ -176,13 +182,13 @@ def main():
         idx = indices[b:b + args.batch_size]
         x, y = load_batch(idx, device)
         d = attack(model, norm, dfd, x, y, args.loss, args.through, args.steps, args.eot,
-                   ATTACK["eps"], ATTACK["step"])
+                   ATTACK["eps"], ATTACK["step"], args.predict)
         xa = torch.clamp(x + d, 0.0, 1.0)
         x_def = dfd(xa, y)
         stats += dfd._last
         with torch.no_grad():
-            meters["undefended"].update(model(norm(xa))[0], y)
-            meters["defended"].update(model(norm(x_def))[0], y)
+            meters["undefended"].update(predict_logp(model, norm, xa, args.predict, y.shape[-2:]), y)
+            meters["defended"].update(predict_logp(model, norm, x_def, args.predict, y.shape[-2:]), y)
         done = min(b + args.batch_size, len(indices))
         print(f"  [{done:3d}/{len(indices)}] " + " | ".join(f"{k} {m.miou():.2f}" for k, m in meters.items()) +
               f" | gate defended {np.mean([s['defended'] for s in stats]):.2f}", flush=True)

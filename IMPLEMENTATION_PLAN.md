@@ -553,6 +553,18 @@ Per-image oracle (PGD+def, seed-0 attacks, best-of-6):
 
 **−up in v2 (pre-registered 2026-10-28, before any test100 run of it):** adopt −up for a model only if, on `test100` with 3 seeds, it is within 1.5 of the P4c locked config **and** within 1.5 of the P4c full-view row (`ours, full views`) on both clean+def and PGD+def. Otherwise report it as a "fast mode" with its measured cost.
 
+### v2 confirmation (pre-registered 2026-10-28, before any v2 run)
+
+Candidates from E1–E2: `avg_rs` (E2) and the `−up` view set (E1). Runs: `test100`, seeds 0–2, both models, ours config, modes clean / PGD / clean+def / PGD+def (`results/improvements/v2/`), plus BPDA-50 attacking *through* the averaging (`p6b_attacks --predict avg_rs`, first 50 test100 images, seed 0). Job list: `results/improvements/v2/v2_jobs.json`.
+
+- **Adopt `avg_rs`** for a model if:
+  1. on `test100` it beats the P4c locked config (`p4c_<model>_ours_test100`, plain prediction) by > 1.5 on PGD+def while losing ≤ 1.5 on clean+def (paired by seed), **and**
+  2. under BPDA-50 through the averaging, its defended mIoU is not more than 1.5 below plain BPDA-50 on the same 50 images (P6b seed 0: 4.57 clean model / 23.99 adv).
+
+  If (1) holds and (2) fails, report it as "helps only against non-adaptive attacks".
+- **Adopt `−up`**: the rule written in E1 (within 1.5 of the P4c locked config and of the P4c full-view row, both metrics).
+- `−up` + `avg_rs` together is also run; it is adopted only if both parts are adopted on their own.
+
 ### E2. Prediction averaging over views (= P5 below)
 
 Rules and variants are in the P5 section.
