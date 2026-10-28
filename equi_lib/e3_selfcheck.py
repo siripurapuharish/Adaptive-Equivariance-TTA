@@ -107,8 +107,7 @@ def selfcheck_aware_attack(model, norm, dfd, inner, views, x, y, lam, steps=50):
         best_delta[better] = delta.detach()[better]
         g = torch.autograd.grad(obj.sum(), delta)[0]
         delta = torch.clamp(torch.clamp(delta.detach() + step * g.sign(), -eps, eps), -x, 1.0 - x)
-    with torch.no_grad():
-        obj = objective(delta.detach())
+    obj = objective(delta.detach()).detach()   # no torch.no_grad: the defense takes its own gradient step
     better = obj > best
     best_delta[better] = delta.detach()[better]
     return best_delta.detach()
