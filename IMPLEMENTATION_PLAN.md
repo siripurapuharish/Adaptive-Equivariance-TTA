@@ -622,6 +622,29 @@ Each is applied to every image after ours (gated-out images too, so the pipeline
   - "Failure visible under BPDA" if the image-level AUROC of the held-out error for BPDA-50 vs clean is ≥ 0.90.
   - Caveat to state: an attacker can add a held-out-error term (as λ did for the gate in P6a), so visibility is again a matter of evasion cost, not a guarantee.
 
+**Outcome of B1 (2026-10-28; test100 first 50 images, seed 0, ours = P4c config, plain prediction; `python -m equi_lib.e3_selfcheck --model {clean,adv}` → `results/improvements/e3/e3_{model}_test100_n50_s0.json`):**
+
+| Model | Input | defended mIoU | held-out error (mean) | gate score on x_def | ρ(error, image mIoU) | pixel AUROC (wrong) | proxy holds |
+|:--|:--|:--:|:--:|:--:|:--:|:--:|:--:|
+| clean | clean | 56.14 | 0.083 | 0.187 | −0.11 | 0.884 | no |
+| clean | PGD-50 | 24.65 | 0.163 | 0.272 | −0.56 | 0.862 | **yes** |
+| clean | BPDA-50 | 4.39 | **0.452** | 0.721 | +0.13 | 0.837 | no |
+| adv | clean | 48.66 | 0.093 | 0.158 | −0.08 | 0.864 | no |
+| adv | PGD-50 | 26.33 | 0.144 | 0.223 | −0.13 | 0.871 | no |
+| adv | BPDA-50 | 24.26 | **0.190** | 0.291 | −0.09 | 0.869 | no |
+
+Image AUROC of the held-out error, attacked vs clean: clean model PGD 0.950, **BPDA 0.999**; adv model PGD 0.842, **BPDA 0.954**. Pooled ρ: −0.88 (clean model), −0.57 (adv). BPDA regeneration matches P6b seed 0 on the same images (defended 4.49 vs 4.57; adv 24.01 vs 23.99).
+
+- **"Failure visible under BPDA": yes on both models** (image AUROC ≥ 0.90). BPDA-50 breaks the defended prediction, but it does **not** restore equivariance: the held-out error after the defense is 5× the clean level on the clean model (0.452 vs 0.083), higher even than under plain PGD. So the paper's premise is not contradicted. Under BPDA the defense fails to restore equivariance, and that failure is measurable on views it never optimised. The system can flag (or abstain on) images it did not repair.
+- **The proxy within one input type is weak.** Pixel AUROC 0.84–0.88 everywhere (the error map localises wrong pixels well). But the image-level ranking within an input type holds only for PGD on the clean model (ρ −0.56). The held-out error is a good **detector of failure** and a good **error map**, not a fine-grained quality score.
+- **M5 is eligible** (its condition, "proxy holds under PGD-50 on the clean model", is met). It stays optional and first in the cut order.
+- **Open caveat (E3b below):** this BPDA attacker did not know about the self-check.
+
+**E3b. Self-check-aware attack (pre-registered 2026-10-28, before running):**
+- BPDA-50 through ours (as in E3), with the objective CE(defended) − λ · (held-out error of x_def), λ ∈ {1, 10}. The held-out error is differentiated exactly through its forward passes; the purifier uses the identity backward.
+- Clean model, the same 50 test100 images, seed 0. Report defended mIoU, held-out error, and the image AUROC vs clean.
+- **Reading:** "self-check survives" if, at every λ, either the AUROC vs clean stays ≥ 0.90 or evading it costs the attacker ≥ 5 mIoU of damage (defended mIoU ≥ BPDA-50's 4.39 + 5). This is the same evasion-cost logic as P6a.
+
 **M5 (optional, cut first): held-out-view budget selection.** Only if B1 shows the proxy holds under PGD-50 on the clean model.
 - For each image the gate lets through, run `one_step` at ε ∈ {ε_v/2, ε_v} and keep the result with the lower held-out error (B1 views). This costs about 2× the defense time on gated images.
 - Compare against the locked `gate+perimage` on `tune100`, 3 seeds.
