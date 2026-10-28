@@ -590,7 +590,7 @@ BPDA-50 through the averaging (first 50 test100 images, seed 0; `p6b_bpda50avgrs
   - adv model: 49.82 vs 43.47 (**+6.35**), 29.51 vs 27.51 (**+2.00**), at 0.32 vs 8.3 s/img
 
   The clean model's clean+def is now *above* the undefended model (58.05), because the averaging also helps clean images (59.32 undefended with averaging).
-- **Pending:** BPDA-50 on the adv model's exact v2 config (`−up` + avg_rs). The run above used `up1.5` + avg_rs, and fewer views could be easier to attack (P6b note).
+- **BPDA-50 on the adv model's exact v2 config** (`−up` + avg_rs; `p6b_bpda50avgrsnoup_ours_adv_test100_n50_s0`, 2026-10-28): defended **25.41** vs 23.99 for the locked config under plain BPDA-50 (+1.42). Fewer views did not make it easier to attack. **v2 is locked.**
 
 ### E2. Prediction averaging over views (= P5 below)
 
@@ -694,7 +694,7 @@ Image AUROC of the held-out error, attacked vs clean: clean model PGD 0.950, **B
 | self-check-aware λ = 100 | 49.60 | 0.022 | 0.023 | evades fully, nearly harmless (clean input: 56.38) |
 
 - **Verdict (pre-registered): the self-check survives.** At every λ tried, the attacker is either detected (AUROC ≥ 0.90) or loses ≥ 5 mIoU of damage by evading. Breaking the prediction and passing the self-check pull in opposite directions, the same evasion-cost effect as the gate in P6a, but much stronger. **This is the thesis's answer to the adaptive-attack weakness: the defense can be broken, but not silently.**
-- **Gap:** λ between 1 and 10 was not tried. λ = 3 is added after the fact as a robustness check of this verdict; it can only weaken it.
+- **Gap closed (post hoc, 2026-10-28; `results/improvements/e3/e3b_lam3_clean_test100_n50_s0.json`):** λ = 3 gives defended 6.33, held-out error 0.268, AUROC vs clean **0.946**, so it is still detected. The verdict holds at λ ∈ {1, 3, 10, 100}.
 - **Rerun note:** this run re-evaluated the E3 inputs with different defense randomness. Clean-model PGD ρ moved from −0.56 to −0.39 (pixel AUROC 0.86 both times), so B1's "proxy holds under PGD" was marginal and is **not stable**. The detection results reproduced (BPDA vs clean 0.999; PGD vs clean 0.95 → 0.94). M5's eligibility condition therefore no longer holds reliably, so **M5 is dropped**.
 
 **M5 (optional, cut first; dropped 2026-10-28, see the E3b rerun note): held-out-view budget selection.** Only if B1 shows the proxy holds under PGD-50 on the clean model.
