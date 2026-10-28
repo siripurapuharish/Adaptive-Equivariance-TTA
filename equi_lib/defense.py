@@ -22,6 +22,39 @@ OPTIMIZERS = ("original", "one_step", "sign_decay", "momentum")
 #   no_up : drop the two 2x upscale views (weak in P2, 63-76% of defense time)
 #   up1.5 : the two upscale views at 1.5x instead of 2x
 VIEW_SETS = ("full", "no_up", "up1.5")
+# E1 (2026-10-28): a base view set followed by modifiers, e.g. "up1.5-rot+flip".
+#   -<group> drops a view group; +flip adds the flip view (cnt 7) when the model's view count stops before it.
+#   Groups by upstream view index cnt: up {0, 2}, down {1, 3} (0.3x, 0.5x), rot {4, 5}, jit {6}, flip {7}.
+#   Without modifiers the view order and random draws are exactly those of the base set.
+VIEW_GROUPS = {"up": (0, 2), "down": (1, 3), "rot": (4, 5), "jit": (6,), "flip": (7,)}
+
+
+def parse_view_set(view_set, num_views):
+    """Returns the list of upstream view indices cnt used by this view set, in upstream order."""
+    import re
+    m = re.fullmatch(r"(full|no_up|up1\.5)((?:[+-][a-z]+)*)", view_set)
+    if not m:
+        raise ValueError(f"view_set {view_set!r}: expected one of {VIEW_SETS} plus modifiers like '-rot', '+flip'")
+    present = list(range(num_views - 1))
+    drop = set(VIEW_GROUPS["up"]) if m.group(1) == "no_up" else set()
+    add_flip = False
+    for sign, grp in re.findall(r"([+-])([a-z]+)", m.group(2)):
+        if grp not in VIEW_GROUPS:
+            raise ValueError(f"view_set {view_set!r}: unknown group {grp!r}")
+        if sign == "-":
+            if not any(c in present for c in VIEW_GROUPS[grp]):
+                raise ValueError(f"view_set {view_set!r}: group {grp!r} is not among the {num_views} views")
+            drop |= set(VIEW_GROUPS[grp])
+        elif grp == "flip" and 7 not in present:
+            add_flip = True
+        else:
+            raise ValueError(f"view_set {view_set!r}: only '+flip' can be added, and only when absent")
+    cnts = [c for c in present if c not in drop] + ([7] if add_flip else [])
+    if not cnts:
+        raise ValueError(f"view_set {view_set!r} leaves no views")
+    return cnts
+
+
 LAYER_IND = 1          # DRNSeg output [1]: 19-channel logits before the 8x upsampling
 ANGLE_R = 15           # rotation views: uniform in [-15, 15] degrees
 UPSTREAM_PI = 3.1415926  # upstream converts degrees with this constant, not math.pi
@@ -45,8 +78,7 @@ class EquiDefense:
             raise ValueError("num_views must be in 1..9 (identity + up to 8 transforms)")
         if optimizer not in OPTIMIZERS:
             raise ValueError(f"optimizer {optimizer!r} not in {OPTIMIZERS}")
-        if view_set not in VIEW_SETS:
-            raise ValueError(f"view_set {view_set!r} not in {VIEW_SETS}")
+        self.view_cnts = parse_view_set(view_set, num_views)
         if view_set != "full" and optimizer == "original":
             raise ValueError("view_set applies to the new optimisers only")
         self.view_set = view_set
@@ -68,9 +100,7 @@ class EquiDefense:
         returns f_t mapped back onto f0's grid and a float validity mask (same shape as f0)."""
         H, W = x.size(2), x.size(3)
         out = []
-        for cnt in range(self.num_views - 1):
-            if self.view_set == "no_up" and cnt in (0, 2):
-                continue
+        for cnt in self.view_cnts:
             theta = None
             if cnt == 0:
                 ratio_s = random.uniform(0.8, 1.2)  # upstream draws this and then overwrites it
@@ -84,7 +114,7 @@ class EquiDefense:
             if cnt == 3:
                 w_s = 0.5
             if cnt < 4:
-                if self.view_set == "up1.5" and cnt in (0, 2):
+                if self.view_set.startswith("up1.5") and cnt in (0, 2):
                     w_s = 1.5
                 ratio_s = random.uniform(0.8, 1.2)
                 xv = _resize(x, (int(H * w_s), int(W * w_s * ratio_s)))

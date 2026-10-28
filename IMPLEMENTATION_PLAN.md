@@ -507,7 +507,7 @@ The time freed by finishing P0–P6b early goes to every lead that could still c
 | clean (base = up, down, rot) | base, −rot, −rot+flip, +flip, −down, −up |
 | adv (base = up, down, rot, jit, flip) | base, −rot, −jit, −flip, −down, −up |
 
-**Runs:** each subset, `tune100`, seeds 0–2, clean+def and PGD+def, with per-image confusion matrices saved. Base also gets seeds 3–5, for the noise oracle.
+**Runs:** each subset, `tune100`, seeds 0–2, clean+def and PGD+def, with per-image confusion matrices saved (`--per-image`). Base is re-run with per-image matrices, plus defense seeds 1–5 on the seed-0 attacks for the noise oracle. Job list: `results/improvements/e1/e1_jobs.json`; analysis: `python -m equi_lib.e1_analyze`.
 
 **Rule 1, fixed subset (pre-registered):**
 - Adopt subset S instead of base if:
@@ -517,7 +517,7 @@ The time freed by finishing P0–P6b early goes to every lead that could still c
 
 **Rule 2, per-image oracle (pre-registered):**
 - Per image, pick the subset with the highest per-image mIoU (seed 0 runs; mIoU over the classes present in the label or the prediction), and pool the chosen confusion matrices into the oracle mIoU.
-- The **noise oracle** applies the same best-of-6 pick to 6 reruns of base (seeds 0–5). Picking the best of several noisy runs inflates the score even when the runs are identical, and this measures by how much.
+- The **noise oracle** applies the same best-of-6 pick to 6 reruns of base on the **same seed-0 attacks** (defense seeds 0–5, `--attack-seed 0`; clarified 2026-10-28 before any E1 run, so that only the defense's randomness varies, as for the subsets). Picking the best of several noisy runs inflates the score even when the runs are identical, and this measures by how much.
 - **Go to E1b** (a label-free per-image rule) only if oracle − noise oracle > 1.5 on PGD+def.
 - Clean+def is not used for the clean model's oracle: the gate leaves 93% of clean images undefended.
 - If no-go, report: "even with labels, choosing views per image cannot beat a fixed data-chosen set by more than seed noise."

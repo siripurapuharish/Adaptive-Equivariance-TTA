@@ -44,11 +44,12 @@ def git_hash() -> str:
 
 def run_seed(args, seed, model, normalize, defense, indices, device):
     set_seed(seed)
-    meters = {m: ConfusionMeter() for m in args.modes}
+    meters = {m: ConfusionMeter(keep_per_image=args.per_image) for m in args.modes}
     secs = defaultdict(float)
     dstats = defaultdict(list)   # per-image defense stats (adaptive defenses only)
     need_pgd = any(m.startswith("pgd") for m in args.modes)
-    cache = PGDCache(args.model, seed, PGD_PARAMS) if (need_pgd and not args.no_cache) else None
+    attack_seed = seed if args.attack_seed is None else args.attack_seed
+    cache = PGDCache(args.model, attack_seed, PGD_PARAMS) if (need_pgd and not args.no_cache) else None
 
     for b in range(0, len(indices), args.batch_size):
         idx = indices[b:b + args.batch_size]
@@ -107,6 +108,8 @@ def run_seed(args, seed, model, normalize, defense, indices, device):
         "per_class_iou": {m: dict(zip(CLASSES, np.round(meters[m].per_class(), 2).tolist())) for m in args.modes},
         "sec_per_image": {k: v / n for k, v in secs.items()},
     }
+    if args.per_image:
+        out["_per_image"] = {m: np.stack(meters[m].per_image) for m in args.modes}
     if dstats:
         out["defense_stats"] = {
             m: {"defended_fraction": float(np.mean([d["defended"] for d in v])),
@@ -132,6 +135,11 @@ def main():
     ap.add_argument("--tag", default=None, help="output name prefix (default: <model>_<defense>)")
     ap.add_argument("--eps-v", type=float, default=None,
                     help="defense budget in units of 1/255, overriding the preset (P4 global sweep)")
+    ap.add_argument("--attack-seed", type=int, default=None,
+                    help="use the cached PGD of this seed for every --seeds run (default: each run's own seed); "
+                         "E1 noise oracle: same attacks, different defense randomness")
+    ap.add_argument("--per-image", action="store_true",
+                    help="also save per-image confusion matrices to <output>_perimage.npz (E1 oracle)")
     ap.add_argument("--def-opts", default=None,
                     help='JSON options for the adaptive defense, e.g. \'{"mode": "perpixel", "beta": 0.2}\'')
     args = ap.parse_args()
@@ -167,6 +175,10 @@ def main():
         per_seed[seed] = res
         suffix = f"_n{args.limit}" if args.limit else ""
         out = os.path.join(RESULTS_DIR, f"{tag}_{args.split}{suffix}_s{seed}.json")
+        per_image = res.pop("_per_image", None)
+        if per_image is not None:
+            np.savez_compressed(out[:-len(".json")] + "_perimage.npz", indices=np.array(indices),
+                                **{m.replace("+", "_"): v for m, v in per_image.items()})
         with open(out, "w") as f:
             json.dump({"config": config, "seed": seed, **res}, f, indent=2)
         print(f"   saved {os.path.relpath(out, ROOT_DIR)}", flush=True)
