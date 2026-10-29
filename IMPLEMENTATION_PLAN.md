@@ -857,6 +857,27 @@ Undefended model under its own strongest attack, same 50 images (`*_test100_n50_
 ## P7. Final runs, demo, write-up (Days 15–25)
 
 - **Days 15–16:** final configurations on `full500` with seed 42 (overnight) for both models, so they line up with the reproduction table.
+**full500 outcome (2026-10-29; jobs `results/improvements/p7/p7_full500_jobs.json`; results `results/improvements/p7/`; original defense = the reproduction runs, full500 seed 42, `results/FINAL_BENCHMARK_REPORT.md` Tasks 2/4/8/10):**
+
+| Model | Config | clean (no def) | PGD (no def) | clean+def | PGD+def | s/img (def + predict) |
+|:--|:--|:--:|:--:|:--:|:--:|:--:|
+| clean | original defense (reproduction, s42) | 58.24 | 1.32 | 35.66 | 29.38 | ~7.2 |
+| clean | P4c locked, no averaging (s42) | 58.24 | 1.27 | 57.73 | 27.33 | 0.27 + 0.05 |
+| clean | **v2 (s42)** | 59.69 | 2.09 | **59.21** | **31.66** | 0.26 + 0.15 |
+| clean | **v2 (seeds 0–2)** | 59.69 | 2.15 | **59.32 ± 0.12** | **31.68 ± 0.57** | 0.27 + 0.15 |
+| adv | original defense (reproduction, s42) | 51.34 | 25.26 | 44.06 | 28.48 | ~8.3 |
+| adv | P4c locked, no averaging (s42) | 51.34 | 25.26 | 50.61 | 27.56 | 0.34 + 0.06 |
+| adv | **v2 (s42)** | 50.95 | 28.66 | **49.97** | **30.12** | 0.20 + 0.15 |
+| adv | **v2 (seeds 0–2)** | 50.95 | 28.64 | **49.90 ± 0.31** | **30.45 ± 0.13** | 0.20 + 0.15 |
+
+"clean / PGD (no def)" for v2 = the undefended model with view averaging only. Gate on the clean model: defends 5.2% of clean images, 100% of PGD images.
+
+- **The test100 result holds on full500.** v2 vs the original (seed 42, same seed as the reproduction): clean model **+23.55 clean+def / +2.28 PGD+def**; adv model **+5.91 / +1.64**. About 20× less time per image (0.41 vs 7.2 s; 0.35 vs 8.3 s). Both v2 PGD+def numbers are also above the paper's (30.76 clean model, 29.65 adv).
+- **The averaging is what beats the original on PGD.** Without it (P4c), full500 PGD+def is 27.33 vs 29.38 (−2.05, clean model) and 27.56 vs 28.48 (−0.92, adv). On test100 the clean-model gap was −1.57, so on 500 images it is a bit larger, and above the 1.5 threshold.
+- **Caveat for the adv model:** view averaging *alone* (no defense) already gives 28.66 under PGD, above the original defense's 28.48. The v2 defense adds +1.46 on top (30.12), just under the 1.5 threshold. So on the adv model most of v2's PGD gain comes from the averaging, not from the purification. On the clean model the defense is essential (2.09 → 31.66).
+- One seed of the original on full500 (6 h per model per seed); the v2 seed std on full500 is ≤ 0.57.
+- Adaptive attacks are not re-run on full500 (P6b / v2 BPDA-50 on test100 subsets stand).
+
 - **Day 17, demo** (`demo/app.py`, Gradio):
   - choose an image and a model
   - attack it (PGD, SegPGD or the gate-aware attack)
