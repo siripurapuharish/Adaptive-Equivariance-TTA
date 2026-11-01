@@ -639,6 +639,49 @@ As written in P5b and P6b. Optional; first in the cut order.
 
 All signals are reported, not only ours. If C1 fails and C2 holds, the claim becomes "the trust map catches the failure, but plain confidence does too", and we report it that way.
 
+**Outcome (2026-11-01; `results/improvements/e5/e5_{tune,test}_*.json`):**
+
+Tune100 picked `avgdis` (clean model) and `fresh` (adv, by 0.02 AURC). `msp` beat all three equivariance signals on tune100 clean and PGD.
+
+Test100, first 50 images, seed 0 (AURC in %, lower is better; err = pixel error rate; silent = wrong and not flagged at t):
+
+| Model | Input | v2 mIoU | err | AURC msp | AURC ours | AURC fresh | pixel AUROC msp / ours / fresh | silent ours |
+|:--|:--|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
+| clean | clean | 57.80 | 9.7 | 1.29 | 1.63 | 2.15 | 0.92 / 0.89 / 0.85 | 7.4 |
+| clean | PGD | 30.64 | 22.8 | 9.47 | 8.17 | 7.77 | 0.80 / 0.81 / 0.82 | 13.6 |
+| clean | BPDA-v2 | 3.85 | 85.3 | 83.14 | 83.86 | 81.00 | 0.49 / 0.47 / 0.61 | 69.8 |
+| clean | trust-aware λ1 / 10 / 100 | 3.76 / 12.46 / 45.58 | 82.5 / 51.5 / 15.2 | | | | | 70.5 / 46.5 / 14.7 |
+| adv | clean | 47.91 | 12.0 | 2.06 | 2.82 | = ours | 0.90 / 0.85 | 10.0 |
+| adv | BPDA-v2 | 25.36 | 31.3 | 12.70 | 12.58 | = ours | 0.81 / 0.80 | 24.6 |
+| adv | trust-aware λ1 / 10 / 100 | 25.79 / 38.67 / 49.03 | 29.0 / 17.2 / 12.5 | | | | | 24.8 / 16.6 / 12.1 |
+
+- **C1:** fails on the clean model (83.86 vs 83.14). On the adv model it passes only formally (12.58 vs 12.70, a tie; entropy 12.58).
+- **C2:** fails on both. Worst silent error 70.5 vs bound 42.6 on the clean model; 24.8 vs 15.7 on the adv model.
+- **Verdict: idea A (pixel trust map) is NOT adopted as a contribution.**
+  - On the clean model under BPDA through v2, no pixel signal beats chance, confidence included (pixel AUROC 0.45–0.49; `fresh` 0.61). The attack makes the model consistently wrong.
+  - On the adv model the equivariance signals tie with confidence.
+- **Mechanism.** E3's held-out views (flip, 0.75x) are inside the v2 averaging, so BPDA through v2 attacks them directly. Their pixel AUROC drops from 0.84–0.88 (E3, P4c system) to 0.455.
+
+**Added after the first run (not pre-registered): E3's image-level test on v2** (image score = mean of the map; AUROC attacked vs clean; E3 bar ≥ 0.90):
+
+| Model | Input | msp | heldout | avgdis | fresh |
+|:--|:--|:--:|:--:|:--:|:--:|
+| clean | PGD | 0.79 | 0.95 | 0.92 | 0.87 |
+| clean | BPDA-v2 | 0.23 | 0.84 | 0.83 | 0.84 |
+| clean | aware λ1 (targets avgdis) | 0.14 | 0.68 | 0.68 | 0.81 |
+| clean | aware λ10 (targets avgdis) | 0.03 | 0.33 | 0.28 | **0.92** |
+| clean | aware λ100 (targets avgdis) | 0.00 | 0.01 | 0.00 | 0.13 |
+| adv | BPDA-v2 | 0.86 | 0.94 | 0.97 | 0.91 |
+| adv | aware λ10 (targets fresh) | 0.36 | 0.16 | 0.52 | 0.04 |
+
+- **E3's "broken but not silently" claim does not carry over cleanly to v2 on the clean model.**
+  - Plain BPDA through v2 is detected at 0.84, below E3's 0.90 bar (E3 on P4c: 0.999).
+  - At λ10 the attacker breaks v2 (12.46 mIoU) and hides from the checks it targets: avgdis 0.28, and heldout 0.33, which shares views with it.
+  - But it does not hide from an untargeted check (`fresh` 0.92).
+  - λ100 hides from all checks, but the attack mostly gives up (45.58 vs 57.80 clean; the gate defends only 6%).
+- Adv model: plain BPDA-v2 is detected (0.91–0.97), as in E3.
+- **Thesis wording:** state the self-check claim for the P4c system (E3/E3b). For v2, say that detection holds against an attacker who doesn't know which check is used, and that an attacker who targets the check can hide from it. This is evidence for idea B (a secret, randomly drawn check view), not a result for it. B's real test is an attacker who averages over the whole view pool.
+
 ---
 
 ## P5. Prediction averaging over views (E2, day 4)

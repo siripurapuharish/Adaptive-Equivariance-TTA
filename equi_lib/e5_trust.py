@@ -195,7 +195,7 @@ def evaluate(model_tag, model, norm, dfd, dfn, indices, device, inputs_fn):
     """inputs_fn(idx, x) -> [(name, attacked input)]. Returns per-input sampled pixel records, mIoU, gate stats."""
     set_seed(EVAL_SEED)
     rng = np.random.default_rng(0)
-    recs, meters, gate = {}, {}, {}
+    recs, meters, gate, img = {}, {}, {}, {}
     t0 = time.time()
     for b in range(0, len(indices), 2):
         idx = indices[b:b + 2]
@@ -212,7 +212,10 @@ def evaluate(model_tag, model, norm, dfd, dfn, indices, device, inputs_fn):
             meters.setdefault(name, ConfusionMeter()).update(logp, y)
             pred = logp.argmax(1)
             r = recs.setdefault(name, {k: [] for k in ("gt", "pred") + SIGNALS})
+            im = img.setdefault(name, {s: [] for s in SIGNALS})
             for i in range(x.size(0)):
+                for s in SIGNALS:   # image score = mean of the map over the whole image (as E3's score)
+                    im[s].append(float(maps[s][i].mean()))
                 valid = torch.nonzero((y[i] != 255).flatten()).squeeze(1).cpu().numpy()
                 take = torch.from_numpy(np.sort(rng.choice(valid, size=min(PER_IMG, valid.size), replace=False)))
                 take = take.to(device)
@@ -225,7 +228,14 @@ def evaluate(model_tag, model, norm, dfd, dfn, indices, device, inputs_fn):
               flush=True)
     recs = {n: {k: np.concatenate(v) for k, v in r.items()} for n, r in recs.items()}
     return recs, {n: m.miou() for n, m in meters.items()}, {n: float(np.mean(g)) if g else None
-                                                            for n, g in gate.items()}
+                                                            for n, g in gate.items()}, img
+
+
+def image_auroc(img):
+    """Image-level detection (E3's test, applied to v2): AUROC of the image score, attacked vs clean."""
+    c = img["clean"]
+    return {n: {s: auroc(np.r_[c[s], v[s]], np.r_[np.zeros(len(c[s])), np.ones(len(v[s]))]) for s in SIGNALS}
+            for n, v in img.items() if n != "clean"}
 
 
 def main():
@@ -256,7 +266,7 @@ def main():
 
     if args.phase == "tune":
         indices = split_indices("tune100")[:args.limit]
-        recs, miou, gate = evaluate(args.model, model, norm, dfd, dfn, indices, device,
+        recs, miou, gate, img = evaluate(args.model, model, norm, dfd, dfn, indices, device,
                                     lambda idx, x: [("clean", x), ("pgd", pgd_input(idx, x))])
         res = {"model": args.model, "split": "tune100", "num_images": len(indices), "v2_miou": miou,
                "gate_defended_fraction": gate, "per_input": {}, "git": git_hash()}
@@ -294,7 +304,7 @@ def main():
                 cases.append((name, torch.clamp(x + torch.clamp(torch.clamp(d, -eps, eps), -x, 1.0 - x), 0, 1)))
             return cases
 
-        recs, miou, gate = evaluate(args.model, model, norm, dfd, dfn, indices, device, inputs)
+        recs, miou, gate, img = evaluate(args.model, model, norm, dfd, dfn, indices, device, inputs)
         res = {"model": args.model, "split": "test100", "num_images": len(indices), "ours": ours, "thresholds": thr,
                "v2_miou": miou, "gate_defended_fraction": gate,
                "attack_generation_check": {k: chk for k, (_, chk) in attacks.items()},
@@ -318,6 +328,11 @@ def main():
         print(f"  C1 (AURC ours < msp on BPDA): {res['C1_aurc_ours_lt_msp_on_bpda']}")
         print(f"  C2 (worst silent error {res['C2_worst_silent_error']:.2f} on {worst} <= 0.5 x BPDA error "
               f"{res['C2_bpda_error_rate']:.2f}): {res['C2_no_silent_failure']}")
+        # added after the first E5 run (2026-11-01): E3's image-level test (AUROC bpda vs clean >= 0.90) on v2
+        res["image_scores"] = img
+        res["image_auroc_vs_clean"] = ia = image_auroc(img)
+        print("  image AUROC vs clean (E3 test on v2): " + " | ".join(
+            f"{n}: " + " ".join(f"{s} {ia[n][s]:.3f}" for s in SIGNALS) for n in ia))
         out = os.path.join(OUT_DIR, f"e5_test_{args.model}_n{len(indices)}_s{SEED}.json")
     with open(out, "w") as f:
         json.dump(res, f, indent=1)
