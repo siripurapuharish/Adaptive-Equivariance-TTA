@@ -1,0 +1,15 @@
+{
+  "_help": "Methods shown in the demo, per model. Add an improvement = add one entry; the app needs no change. Fields: name, note (short subtitle), defense (a key of equi_lib.defenses.DEFENSES), eps_v (1/255 units; default = the paper's preset), def_opts (options for the 'adaptive' defense), predict (equi_lib.averaging variant), highlight (accent card; its gate and error map are shown), attack_target (BPDA-50 attacks through this method).",
+  "clean": [
+    {"name": "Paper's defense", "note": "Mao et al. 2023 · 20 steps", "defense": "original", "predict": "single"},
+    {"name": "Ours (v2)", "note": "gate + 1 step + 4-view averaging", "defense": "adaptive", "eps_v": 6,
+     "def_opts": {"mode": "gate+perimage", "view_set": "up1.5"}, "predict": "avg_rs",
+     "highlight": true, "attack_target": true}
+  ],
+  "adv": [
+    {"name": "Paper's defense", "note": "Mao et al. 2023 · 20 steps", "defense": "original", "predict": "single"},
+    {"name": "Ours (v2)", "note": "1 step + 4-view averaging", "defense": "adaptive", "eps_v": 4,
+     "def_opts": {"mode": "global", "view_set": "up1.5-up"}, "predict": "avg_rs",
+     "highlight": true, "attack_target": true}
+  ]
+}
