@@ -604,6 +604,41 @@ The held-out-view error becomes a reliability output per image and per pixel, if
 
 As written in P5b and P6b. Optional; first in the cut order.
 
+### E5. Trust map: flag the pixels not to trust (idea A, pre-registered 2026-11-01, before any E5 run)
+
+**Idea.** The system keeps its v2 prediction and also outputs a per-pixel "don't trust" map. When an attack breaks the defense (BPDA), the map should show where. This follows E3/E3b (held-out error detects BPDA; hiding from it costs mIoU) and turns that into a per-pixel output. Output only: the defense and the prediction are unchanged, so every earlier number stays valid. Script: `python -m equi_lib.e5_trust --model {clean,adv} --phase {tune,test}`; results in `results/improvements/e5/`.
+
+**System:** the locked v2 configs (clean model: gate+perimage, up1.5, ε_v 6/255; adv: global, up1.5-up, ε_v 4/255), prediction `avg_rs`.
+
+**Signals** (per pixel, higher = less trust; computed on the defended image, detached, upsampled to label size):
+- `msp`: 1 − max softmax of the v2 prediction (softmax of the mean log-softmax). Baseline (standard confidence).
+- `entropy`: entropy of the same distribution. Baseline.
+- `heldout`: E3 held-out-view error (clean model flip + 0.75x; adv 0.75x).
+- `avgdis`: disagreement among the 4 averaging views (mean softmax L2 of each view to their mean).
+- `fresh`: held-out error on views used by neither the defense nor the averaging (resize 0.625x and 0.875x).
+
+**Tune100** (all 100 images, seed 0; inputs clean and cached PGD-50 s0):
+- "ours" = the equivariance signal (`heldout`, `avgdis`, `fresh`) with the lowest mean AURC over clean and PGD, per model.
+- Operating threshold t = 95th percentile of the signal on tune100 clean valid pixels (≈ 5% of clean pixels flagged). Set for ours and for `msp`.
+
+**Test100** (first 50 images, seed 0; both models). Inputs:
+- clean
+- PGD-50 (cached s0)
+- BPDA-50 through v2 (identity backward through the purifier, exact gradient through the averaging, as in the v2 BPDA re-check)
+- trust-aware BPDA-50, λ ∈ {1, 10, 100}: maximise CE(v2 prediction) − λ · mean over pixels of ours (the adaptive attack on the trust map)
+
+**Metrics** (valid pixels; 40k random valid pixels per image, fixed RNG):
+- AURC: pixel error rate vs coverage
+- pixel AUROC for "wrong"
+- accuracy and mIoU on kept pixels at 90 / 80 / 70 / 50 % coverage
+- at t: flagged fraction, error rate, and silent error rate (wrong and not flagged, over valid pixels)
+
+**Claims** (per model):
+- **C1, better than confidence where it matters:** on BPDA-v2, AURC(ours) < AURC(msp).
+- **C2, no silent failure:** the worst silent error rate over {BPDA-v2, λ 1, 10, 100} is ≤ 0.5 × the error rate of BPDA-v2 without the trust map.
+
+All signals are reported, not only ours. If C1 fails and C2 holds, the claim becomes "the trust map catches the failure, but plain confidence does too", and we report it that way.
+
 ---
 
 ## P5. Prediction averaging over views (E2, day 4)
